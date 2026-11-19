@@ -62,11 +62,20 @@ function recordGame(list, losers) {
   };
   saveJSON(FACES_KEY, faces);
   saveGames([game, ...loadGames()]);
+  // Online too (if switched on). If there's no signal it waits and uploads later.
+  Cloud.upload(game);
+  state.players.forEach((p) => p.avatar?.startsWith("data:") && Cloud.uploadFace(nameKey(p.name), p.avatar));
 }
 
 function deleteGame(id) {
-  if (id === "earlier") localStorage.removeItem(LEGACY_KEY);
-  else saveGames(loadGames().filter((g) => g.id !== id));
+  const removeHere = () => {
+    if (id === "earlier") localStorage.removeItem(LEGACY_KEY);
+    else saveGames(loadGames().filter((g) => g.id !== id));
+  };
+  // Online: delete there first. The database refuses unless you're the admin.
+  if (Cloud.on) return Cloud.remove(id).then(removeHere);
+  removeHere();
+  return Promise.resolve();
 }
 
 // ----- The leaderboard, worked out from the games -----------------
@@ -112,6 +121,7 @@ function payShot(key) {
   const paid = loadJSON(PAID_KEY, {});
   paid[key] = (paid[key] || 0) + 1;
   saveJSON(PAID_KEY, paid);
+  Cloud.pay(key);
 }
 
 function resetEverything() {
@@ -125,6 +135,9 @@ let lbTab = "board"; // "board" | "history"
 function renderBoard() {
   document.querySelectorAll("[data-lbtab]").forEach((b) => b.classList.toggle("on", b.dataset.lbtab === lbTab));
   $("lb-list").classList.toggle("hidden", lbTab !== "board");
+  $("lb-reset").classList.toggle("hidden", Cloud.on); // online: delete games one by one instead
+  $("lb-cloud").classList.toggle("hidden", !Cloud.on);
+  $("lb-cloud").textContent = Cloud.isAdmin ? t("cloudAdmin") : t("cloudOn");
   $("hist-list").classList.toggle("hidden", lbTab !== "history");
   if (lbTab === "history") return renderHistory();
 
@@ -236,7 +249,14 @@ function openGame(id) {
 
 // Who may delete games. On this phone only for now; once the online
 // database is switched on, only the admin (Mott) will.
-function canDelete() { return true; }
+function canDelete() { return !Cloud.on || Cloud.isAdmin; }
+
+// Something changed (maybe on another phone): redraw what's showing
+function refreshHistory() {
+  if (!$("leaderboard").classList.contains("hidden")) renderBoard();
+  if (state.phase === "setup") render(); // the "regulars" chips
+  TV.sendState();
+}
 
 // ===== Wiring =====================================================
 $("lb-open").addEventListener("click", () => { renderBoard(); $("leaderboard").classList.remove("hidden"); });
@@ -259,13 +279,42 @@ $("hist-list").addEventListener("click", (e) => {
 $("gd-close").addEventListener("click", () => $("game-detail").classList.add("hidden"));
 $("gd-delete").addEventListener("click", () =>
   askConfirm(t("gameDelete"), t("gameDeleteText"), t("gameDelete"), () => {
-    deleteGame(openGameId);
-    $("game-detail").classList.add("hidden");
-    renderBoard();
-    render();          // the regulars on the setup screen may change
-    TV.sendState();    // and the TV's leaderboard
+    deleteGame(openGameId)
+      .then(() => {
+        $("game-detail").classList.add("hidden");
+        refreshHistory(); // leaderboard, regulars and the TV all update
+      })
+      .catch(() => toast(t("deleteFailed"), "bad"));
   })
 );
+
+// ----- Admin sign-in (only the admin can delete games online) -----
+function drawAdmin() {
+  $("admin-open").classList.toggle("hidden", !Cloud.on);
+  $("admin-out").classList.toggle("hidden", !Cloud.isAdmin);
+  $("admin-in").classList.toggle("hidden", Cloud.isAdmin);
+  $("admin-go").classList.toggle("hidden", Cloud.isAdmin);
+  $("admin-signout").classList.toggle("hidden", !Cloud.isAdmin);
+}
+$("admin-open").addEventListener("click", () => {
+  $("admin-msg").textContent = "";
+  drawAdmin();
+  $("admin").classList.remove("hidden");
+});
+$("admin-close").addEventListener("click", () => $("admin").classList.add("hidden"));
+$("admin-go").addEventListener("click", () => {
+  $("admin-msg").textContent = "";
+  Cloud.signIn($("admin-email").value.trim(), $("admin-pass").value)
+    .then(() => { $("admin-pass").value = ""; $("admin").classList.add("hidden"); toast(t("cloudAdmin"), "good"); })
+    .catch(() => ($("admin-msg").textContent = t("adminFailed")));
+});
+$("admin-signout").addEventListener("click", () => Cloud.signOut().then(() => $("admin").classList.add("hidden")));
+
+// Switch the online database on (does nothing until cloud.js has the config)
+document.addEventListener("DOMContentLoaded", () => {
+  Cloud.init();
+  drawAdmin();
+});
 $("lb-reset").addEventListener("click", () =>
   askConfirm(t("lbReset"), t("lbResetText"), t("lbReset"), () => { resetEverything(); renderBoard(); render(); TV.sendState(); })
 );

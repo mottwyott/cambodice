@@ -10,6 +10,15 @@
 const LANGS = {
   en: {
     label: "English",
+    cloudOn: "☁️ Shared online with every phone",
+    cloudAdmin: "☁️ Signed in as admin: you can delete games",
+    admin: "Admin",
+    adminEmail: "Admin email",
+    adminPassword: "Password",
+    adminSignIn: "Sign in",
+    adminSignOut: "Sign out",
+    adminFailed: "That email or password didn't work.",
+    deleteFailed: "Couldn't delete it. Only the admin can, and it needs signal.",
     history: "History",
     histTo: "to {target}",
     earlier: "Earlier games",

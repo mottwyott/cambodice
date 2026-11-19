@@ -137,9 +137,11 @@
         <button class="btn seg" data-lbtab="board" data-t="leaderboard"></button>
         <button class="btn seg" data-lbtab="history" data-t="history"></button>
       </div>
+      <div class="lb-cloud hidden" id="lb-cloud"></div>
       <ol class="sc-list lb-list" id="lb-list"></ol>
       <ul class="sc-list lb-list hist-list hidden" id="hist-list"></ul>
       <button class="btn btn-ghost btn-tiny lb-reset" id="lb-reset" data-t="lbReset"></button>
+      <button class="btn btn-ghost btn-tiny lb-reset hidden" id="admin-open" data-t="admin"></button>
     </div>
   </section>
 
@@ -152,6 +154,24 @@
       </div>
       <div id="gd-body"></div>
       <button class="btn btn-ghost btn-tiny lb-reset gd-delete" id="gd-delete" data-t="gameDelete"></button>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN SIGN-IN (only the admin can delete games) ============ -->
+  <section id="admin" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-title" data-t="admin"></div>
+      <div id="admin-in">
+        <input id="admin-email" class="admin-field" type="email" autocomplete="username" data-tp="adminEmail" />
+        <input id="admin-pass" class="admin-field" type="password" autocomplete="current-password" data-tp="adminPassword" />
+        <p class="tv-msg warn" id="admin-msg"></p>
+      </div>
+      <p id="admin-out" class="confirm-text hidden" data-t="cloudAdmin"></p>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" id="admin-close" data-t="cancel"></button>
+        <button class="btn btn-go" id="admin-go" data-t="adminSignIn"></button>
+        <button class="btn btn-bust hidden" id="admin-signout" data-t="adminSignOut"></button>
+      </div>
     </div>
   </section>
 
@@ -266,6 +286,10 @@
   <script src="rules.js"></script>
   <script src="lib/peerjs.min.js"></script>
   <script src="net.js"></script>
+  <script src="lib/firebase/firebase-app-compat.js"></script>
+  <script src="lib/firebase/firebase-auth-compat.js"></script>
+  <script src="lib/firebase/firebase-firestore-compat.js"></script>
+  <script src="cloud.js"></script>
   <script src="tv-link.js"></script>
   <script src="app.js"></script>
   <script src="history.js"></script>

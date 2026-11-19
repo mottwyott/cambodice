@@ -1,0 +1,44 @@
+// firestore.rules — who may do what in the online database.
+// Paste this into Firebase console → Firestore Database → Rules → Publish.
+// Replace PASTE-YOUR-UID-HERE with your User UID from
+// Authentication → Users (the admin account).
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin()  { return signedIn() && request.auth.uid == "PASTE-YOUR-UID-HERE"; }
+
+    // Finished games: anyone with the app can read and add. Nobody can
+    // change a finished game. Only the admin can delete one.
+    match /games/{id} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(["id", "date", "players", "winner"])
+        && request.resource.data.players.size() <= 12;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // Each person's latest photo (kept small by the app)
+    match /faces/{name} {
+      allow read: if true;
+      allow write: if signedIn() && request.resource.data.avatar.size() < 120000;
+      allow delete: if isAdmin();
+    }
+
+    // Shots paid off: anyone can tick one off, only the admin can undo
+    match /paid/{name} {
+      allow read: if true;
+      allow create, update: if signedIn()
+        && (resource == null || request.resource.data.count >= resource.data.count);
+      allow delete: if isAdmin();
+    }
+
+    // The old leaderboard from before history was kept
+    match /meta/{doc} {
+      allow read: if true;
+      allow create: if signedIn();
+      allow update, delete: if isAdmin();
+    }
+  }
+}
