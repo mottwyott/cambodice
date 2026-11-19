@@ -22,11 +22,16 @@ function esc(text) {
   div.textContent = text;
   return div.innerHTML;
 }
-const isPicture = (a) => !!a && (a.startsWith("data:") || a.startsWith("avatars/"));
+// Only draw pictures that are really a character or a photo. Anyone who
+// guessed the TV's code could send anything, so nothing is trusted blindly.
 function avatarHTML(avatar, size = "sm") {
-  if (isPicture(avatar)) return `<span class="avatar avatar-${size}"><img src="${avatar}" alt="" /></span>`;
-  return `<span class="avatar avatar-${size}">${esc(avatar || "🎲")}</span>`;
+  const a = typeof avatar === "string" ? avatar : "";
+  if (/^avatars\/[\w-]+\.png$/.test(a) || /^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(a)) {
+    return `<span class="avatar avatar-${size}"><img src="${a}" alt="" /></span>`;
+  }
+  return `<span class="avatar avatar-${size}">${esc(a.slice(0, 16) || "🎲")}</span>`;
 }
+const BADGES = ["moneybag", "magnet", "flame", "snail", "rocket"];
 const ranked = (players) => [...players].sort((a, b) => b.score - a.score);
 
 // ===== 1. CODE + CONNECTION =====================================
@@ -91,9 +96,50 @@ function showStatus(text) {
 
 // ===== 2. MESSAGES FROM THE PHONE ===============================
 
+// Clean up a "state" message before using it: every number really is a
+// number, every name really is text. (Belt and braces: only our phone
+// should ever be connected, but this keeps the TV safe if not.)
+const num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+const str = (x, max = 40) => String(x ?? "").slice(0, max);
+function cleanState(m) {
+  const st = m.state || {};
+  const players = (Array.isArray(st.players) ? st.players : []).slice(0, 12).map((p) => ({
+    name: str(p && p.name, 20), avatar: str(p && p.avatar, 200000), score: num(p && p.score), onBoard: !!(p && p.onBoard),
+    bankStreak: num(p && p.bankStreak), bustStreak: num(p && p.bustStreak),
+  }));
+  const idx = (x) => Math.min(Math.max(0, num(x)), Math.max(0, players.length - 1));
+  const sc = st.scoreCheck;
+  const lt = st.lastTurn;
+  const board = {};
+  Object.entries(m.board && typeof m.board === "object" ? m.board : {}).slice(0, 50).forEach(([k, r]) => {
+    board[str(k)] = { name: str(r && r.name, 20), avatar: str(r && r.avatar, 200000), wins: num(r && r.wins), games: num(r && r.games), points: num(r && r.points), shots: num(r && r.shots) };
+  });
+  return {
+    type: "state",
+    lang: LANGS[m.lang] ? m.lang : "en",
+    theme: ["auto", "light", "dark"].includes(m.theme) ? m.theme : "auto",
+    blocker: m.blocker ? str(m.blocker, 120) : null,
+    awards: m.awards,
+    board,
+    fx: m.fx && m.fx.banked ? { banked: { player: idx(m.fx.banked.player), from: num(m.fx.banked.from) } } : {},
+    state: {
+      phase: ["setup", "playing", "over"].includes(st.phase) ? st.phase : "setup",
+      target: num(st.target) || 10000,
+      players,
+      current: idx(st.current),
+      turn: (Array.isArray(st.turn) ? st.turn : []).map(num),
+      finalTriggeredBy: st.finalTriggeredBy === null || st.finalTriggeredBy === undefined ? null : idx(st.finalTriggeredBy),
+      scoreCheck: sc ? { name: str(sc.name, 20), milestone: num(sc.milestone), final: !!sc.final } : null,
+      lastTurn: lt ? { player: idx(lt.player), points: num(lt.points), bust: !!lt.bust } : null,
+    },
+  };
+}
+
 function onMessage(m) {
   if (!m || !m.type) return;
   if (m.type === "state") {
+    m = cleanState(m);
+    if (m.state.phase !== "setup" && !m.state.players.length) return;
     const langChanged = m.lang !== lang;
     S = m;
     if (LANGS[m.lang]) lang = m.lang;
@@ -101,7 +147,7 @@ function onMessage(m) {
     applyTheme(m.theme);
     draw();
   }
-  if (m.type === "toast") toast(m.text, m.mood);
+  if (m.type === "toast") toast(str(m.text, 300), ["good", "bad", "legend"].includes(m.mood) ? m.mood : "");
   if (m.type === "sound" && typeof Sound[m.name] === "function") Sound[m.name]();
   if (m.type === "confetti") confetti();
   if (m.type === "shake") {
@@ -265,10 +311,10 @@ function drawWinner() {
     shot.classList.remove("hidden");
   } else shot.classList.add("hidden");
 
-  const aw = S.awards || [];
+  const aw = (Array.isArray(S.awards) ? S.awards : []).filter((a) => a && BADGES.includes(a.badge) && /^a[A-Z]\w+$/.test(a.title));
   $("tv-awards").innerHTML = aw
     .map((a) => `<li><img src="badges/${a.badge}.png" alt="" />
-      <div><b>${t(a.title)}</b><small>${esc(a.who)} · ${t(a.title + "D", { n: a.n })}</small></div></li>`)
+      <div><b>${t(a.title)}</b><small>${esc(String(a.who))} · ${t(a.title + "D", { n: esc(String(a.n ?? "")) })}</small></div></li>`)
     .join("");
   $("tv-awards-wrap").classList.toggle("hidden", aw.length === 0);
 }

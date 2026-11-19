@@ -270,7 +270,7 @@ function openGame(id) {
   const order = [...g.players].sort((a, b) => b.score - a.score);
   $("gd-title").textContent = niceDate(g.date);
   $("gd-body").innerHTML = `
-    <div class="gd-head">${t("wins", { name: g.winner })} <small>${t("histTo", { target: fmt(g.target) })}</small></div>
+    <div class="gd-head">${t("wins", { name: esc(g.winner) })} <small>${t("histTo", { target: fmt(g.target) })}</small></div>
     ${g.log.length ? `<div class="section-label">${t("chartTitle")}</div>
       <div class="gd-chart">${chartSVG(g)}
         <div class="chart-key">${g.players.map((p, i) => `<span><i style="background:${LINE_COLOURS[i % LINE_COLOURS.length]}"></i>${esc(p.name)}</span>`).join("")}</div>

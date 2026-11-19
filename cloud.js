@@ -30,7 +30,10 @@ const FIREBASE_CONFIG = {
 };
 
 // Shown small on the History screen, handy to check a phone has the latest version
-const APP_VERSION = "v17";
+const APP_VERSION = "v18";
+
+// The admin's account id (the same one written in firestore.rules)
+const ADMIN_UID = "uN3NYHP3OJTIFQK1SnHWb5PKfi33";
 
 const Cloud = {
   status: "off",   // what's happening, shown on the History screen
@@ -62,8 +65,9 @@ const Cloud = {
         return;
       }
       this.status = "connecting";
-      this.isAdmin = !user.isAnonymous;
+      this.isAdmin = user.uid === ADMIN_UID; // any other account is treated as a guest
       this.listen();
+      if (this.isAdmin && this.ready) this.firstRun(); // admin just signed in: upload anything waiting
       drawAdmin();
       refreshHistory();
     });
@@ -104,8 +108,10 @@ const Cloud = {
 
     this.db.collection("meta").doc("legacy").onSnapshot((doc) => {
       if (doc.metadata.fromCache && !this.ready) return;
-      if (doc.exists) saveJSON(LEGACY_KEY, doc.data().board || {});
-      else if (localStorage.getItem("cambodice-cloud-moved")) localStorage.removeItem(LEGACY_KEY);
+      const board = doc.exists ? doc.data().board || {} : {};
+      // Never let an empty online copy wipe an old leaderboard still waiting to upload
+      if (Object.keys(board).length) saveJSON(LEGACY_KEY, board);
+      else if (localStorage.getItem("cambodice-legacy-up")) localStorage.removeItem(LEGACY_KEY);
       refreshHistory();
     }, (e) => { this.status = "error: " + (e.code || e.message); refreshHistory(); });
   },
@@ -113,13 +119,18 @@ const Cloud = {
   // The very first time this phone goes online: move its old
   // "earlier games" and paid shots up to the shared database.
   firstRun() {
+    // The old leaderboard can only be uploaded by the admin (so nobody
+    // else can plant a fake one). It waits on the phone until then.
+    const legacy = loadJSON(LEGACY_KEY, {});
+    if (this.isAdmin && Object.keys(legacy).length && !localStorage.getItem("cambodice-legacy-up")) {
+      const ref = this.db.collection("meta").doc("legacy");
+      ref.get().then((doc) => {
+        if (!doc.exists || !Object.keys(doc.data().board || {}).length) ref.set({ board: legacy });
+        localStorage.setItem("cambodice-legacy-up", "1");
+      }).catch(() => {});
+    }
     if (localStorage.getItem("cambodice-cloud-moved")) return;
     localStorage.setItem("cambodice-cloud-moved", "1");
-    const legacy = loadJSON(LEGACY_KEY, {});
-    if (Object.keys(legacy).length) {
-      const ref = this.db.collection("meta").doc("legacy");
-      ref.get().then((doc) => { if (!doc.exists) ref.set({ board: legacy }); }).catch(() => {});
-    }
     Object.entries(loadJSON(PAID_KEY, {})).forEach(([key, n]) => {
       if (n > 0) this.db.collection("paid").doc(key).set({ count: firebase.firestore.FieldValue.increment(n) }, { merge: true });
     });
