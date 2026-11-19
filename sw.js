@@ -3,7 +3,7 @@
 // app's files, so it still opens with no signal.
 // When you change any file, bump the version number below so phones
 // fetch the new copy.
-const CACHE = "cambodice-v14";
+const CACHE = "cambodice-v15";
 const FILES = [
   "./", "index.html", "style.css", "icons.js", "sounds.js", "lang.js", "rules.js", "app.js", "manifest.json",
   "icons/icon-180.png", "net.js", "tv-link.js", "history.js", "cloud.js", "lib/firebase/firebase-app-compat.js", "lib/firebase/firebase-auth-compat.js", "lib/firebase/firebase-firestore-compat.js", "lib/peerjs.min.js", "tv/", "tv.js", "tv.css", "fonts/manrope-500.woff2", "fonts/manrope-600.woff2", "fonts/manrope-700.woff2", "fonts/manrope-800.woff2",
@@ -41,8 +41,14 @@ self.addEventListener("activate", (e) => {
 
 // Try the network first (so you get updates), fall back to the saved copy offline.
 self.addEventListener("fetch", (e) => {
+  const url = new URL(e.request.url);
+  // Only handle our own files. Everything else (the online database,
+  // the TV matchmaker) goes straight to the internet untouched.
+  if (e.request.method !== "GET" || url.origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    // "no-cache" = always check GitHub for a newer copy (the browser would
+    // otherwise reuse an old one for up to 10 minutes)
+    fetch(e.request, { cache: "no-cache" })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
