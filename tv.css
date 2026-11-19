@@ -1,0 +1,148 @@
+/* tv.css — extra styles for the TV page (tv/index.html)
+   ---------------------------------------------------------------
+   The TV reuses style.css (same colours, fonts, cards), then this
+   file makes everything big and wide.
+   Trick: the whole page is sized in "rem", and 1rem is set from the
+   screen width (vw). So the layout looks the same on a 720p monitor
+   and a 4K TV, just sharper.
+   --------------------------------------------------------------- */
+
+html { font-size: clamp(12px, 1.25vw, 48px); }      /* 1920px wide -> 24px */
+body.tv { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font-family: "Manrope", system-ui, sans-serif; }
+
+.tv-screen { height: 100vh; box-sizing: border-box; padding: 3rem 3.5rem; }
+.tv-center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+/* Logo, bigger */
+.tv-logo { font-size: 4.5rem; margin: 0; }
+.tv-logo .die { width: 0.8em; height: 0.8em; }
+.tv-logo-sm { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.04em; display: inline-flex; align-items: center; }
+.tv-logo-sm .die { width: 0.8em; height: 0.8em; margin: 0 0.02em; }
+
+/* ---------- Waiting screen ---------- */
+.tv-wait-title { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.03em; margin-top: 3rem; }
+.tv-wait-sub { font-size: 1.4rem; color: var(--muted); font-weight: 600; margin-top: 0.5rem; }
+.tv-code-big { display: flex; gap: 1.2rem; margin-top: 2.5rem; }
+.tv-code-big span {
+  width: 7rem; height: 8.5rem; display: grid; place-items: center;
+  font-size: 5.5rem; font-weight: 800; color: var(--lavender-ink);
+  background: var(--card); border-radius: 1.6rem; box-shadow: var(--shadow), inset 0 0 0 2px var(--lavender);
+  animation: rise 0.6s cubic-bezier(.2,.9,.2,1) both;
+}
+.tv-code-big span:nth-child(2) { animation-delay: 0.08s; }
+.tv-code-big span:nth-child(3) { animation-delay: 0.16s; }
+.tv-code-big span:nth-child(4) { animation-delay: 0.24s; }
+.tv-net { margin-top: 2rem; color: var(--blush-ink); font-weight: 700; font-size: 1.1rem; min-height: 1.4em; }
+
+/* ---------- Lobby ---------- */
+#tv-lobby { display: grid; grid-template-columns: 1fr 30rem; gap: 3rem; align-items: center; }
+#tv-lobby:has(#lobby-board-wrap.hidden) { grid-template-columns: 1fr; }
+.tv-lobby-main { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.6rem; }
+.tv-lobby-title { font-size: 2rem; font-weight: 800; color: var(--muted); }
+.tv-lobby-players { display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; }
+.tv-lobby-player { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; font-size: 1.3rem; animation: zoomIn 0.4s cubic-bezier(.2,1.4,.4,1); }
+.tv-pill { display: inline-block; background: var(--butter); color: var(--butter-ink); font-weight: 800; border-radius: 999px; padding: 0.4rem 1.1rem; font-size: 1.1rem; }
+
+.tv-panel { background: var(--card); border-radius: 1.6rem; box-shadow: var(--shadow); padding: 1.4rem; }
+.tv-panel-title { font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.8rem 0.4rem; }
+.tv-panel-title .icon-sm { width: 1.2em; height: 1.2em; }
+.tv .sc-list li { gap: 0.8rem; padding: 0.6rem 0.8rem; font-size: 1.05rem; }
+.tv .sc-rank { width: 1.2rem; }
+.tv .lb-shots img { width: 1.5rem; height: 1.5rem; }
+.tv-lb .name small { display: block; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+
+/* ---------- Avatars on TV ---------- */
+.tv .avatar-sm { width: 2.2rem; height: 2.2rem; font-size: 1.4rem; }
+.tv .avatar-md { width: 3rem; height: 3rem; font-size: 1.9rem; }
+.tv .avatar-lg { width: 6rem; height: 6rem; font-size: 3.6rem; box-shadow: 0 0 0 0.25rem var(--card), 0 0 0 0.5rem var(--lavender); }
+.tv .avatar-xl { width: 8rem; height: 8rem; font-size: 5rem; box-shadow: 0 0 0 0.3rem var(--card), 0 0 0 0.6rem #f3d670; }
+
+/* ---------- Game: scoreboard left, turn right ---------- */
+.tv-game { display: grid; grid-template-columns: 1.15fr 1fr; gap: 2.5rem; padding: 2.2rem 3rem; }
+.tv-left, .tv-right { display: flex; flex-direction: column; gap: 1.2rem; min-height: 0; }
+.tv-head { display: flex; align-items: center; justify-content: space-between; }
+
+.tv-board { flex: 0 1 auto; display: flex; flex-direction: column; border-radius: 1.6rem; margin: 0; }
+.tv-board li {
+  flex: none; height: min(9rem, calc((100vh - 10rem) / var(--rows, 4)));
+  /* fewer players = bigger rows; the font follows the row count */
+  font-size: clamp(1.2rem, calc(15rem / var(--rows, 4)), 2.4rem);
+  align-content: center;
+  gap: 0.6em; padding: 0 1em; grid-template-columns: auto 1fr auto;
+}
+.tv-board .avatar-md { width: 1.9em; height: 1.9em; font-size: 1.1em; }
+.tv-board .score { font-size: 1.15em; }
+.tv-board .tag { font-size: 0.5em; }
+.tv-board .streak { width: 0.9em; height: 0.9em; vertical-align: -0.1em; }
+.tv-board .bar { height: 0.16em; margin-top: 0.3em; }
+.tv-board li.current::before { width: 0.3rem; }
+
+.tv-banner { font-size: 1.4rem; padding: 0.8rem; border-radius: 1.2rem; }
+.tv-turn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; border-radius: 2rem; padding: 2rem; }
+.tv-turn-name { font-size: 2.2rem; margin-top: 1rem; }
+.tv-turn-points { font-size: 9rem; line-height: 1; margin: 0; }
+.tv-turn-label { color: var(--faint); font-weight: 700; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.12em; }
+.tv-turn-hint { font-size: 1.4rem; min-height: 1.5em; }
+.tv-turn .avatar-xl { box-shadow: 0 0 0 0.3rem var(--card), 0 0 0 0.6rem var(--lavender); }
+.tv-last { font-size: 1.3rem; gap: 0.6rem; justify-content: center; }
+.tv-last .lt-label { font-size: 0.9rem; }
+
+/* ---------- Winner ---------- */
+.tv-winner { display: grid; grid-template-columns: 1.3fr 1fr; gap: 3rem; align-items: center; }
+.tv-winner .winner-eyebrow { font-size: 1.2rem; margin: 0; }
+.tv-winner .winner-name { font-size: 4.5rem; margin: 0.3rem 0 2rem; }
+.tv-winner .podium { gap: 1.2rem; }
+.tv-winner .step { max-width: 14rem; gap: 0.4rem; }
+.tv-winner .step-name { font-size: 1.6rem; }
+.tv-winner .step-score { font-size: 1.2rem; }
+.tv-winner .step-block { font-size: 3rem; border-radius: 1.4rem 1.4rem 0.3rem 0.3rem; padding-top: 1rem; }
+.tv-winner .step-1 .step-block { height: 15rem; }
+.tv-winner .step-2 .step-block { height: 11rem; }
+.tv-winner .step-3 .step-block { height: 8rem; }
+.tv-win-side { display: flex; flex-direction: column; gap: 1.2rem; }
+.tv .shot-note { font-size: 1.4rem; border-radius: 1.4rem; padding: 1.2rem 1.4rem; gap: 1rem; }
+.tv .shot-badge { width: 3rem; height: 3rem; }
+.tv .awards { padding: 0.4rem 1.2rem; border-radius: 1.4rem; }
+.tv .awards li { gap: 1rem; padding: 0.7rem 0; font-size: 1.2rem; }
+.tv .awards img { width: 3.4rem; height: 3.4rem; }
+.tv .section-label { font-size: 0.9rem; margin: 0 0.4rem 0.6rem; }
+.tv .scoreboard.final li { font-size: 1.3rem; padding: 0.8rem 1rem; }
+
+/* ---------- Overlays ---------- */
+.tv .score-check { padding: 3rem; }
+.tv .sc-card { max-width: 46rem; border-radius: 2rem; padding: 2rem 2rem 1.6rem; }
+.tv .sc-eyebrow { font-size: 1rem; }
+.tv .sc-title { font-size: 3rem; }
+.tv .sc-sub { font-size: 1.3rem; margin-bottom: 1.4rem; }
+.tv .sc-list li { font-size: 1.4rem; padding: 0.7rem 1rem; }
+.tv .sc-score b { font-size: 1.6rem; }
+.tv .sc-score small { font-size: 0.95rem; }
+
+.tv-rules .sc-card { max-width: 76rem; max-height: 92vh; overflow: hidden; font-size: 0.8rem; padding: 1.4rem 2rem; }
+.tv-rules .sc-title { margin-bottom: 1rem; }
+#tv-rules-body { columns: 3; column-gap: 2rem; }
+#tv-rules-body > * { break-inside: avoid; }
+
+.tv-toast {  /* pops up inside the turn card on the right, so it never hides the scores */
+  top: auto; bottom: 8rem; left: 73.5%; max-width: 38vw; width: max-content;
+  font-size: 2rem; padding: 1.2rem 2.2rem; border-radius: 1.6rem;
+  transform: translate(-50%, 150%);
+}
+.tv-toast.show { transform: translate(-50%, 0); }
+.tv-toast.legend { font-size: 2.4rem; }
+
+.tv-status {
+  position: fixed; top: 1.2rem; left: 50%; transform: translate(-50%, -200%);
+  background: var(--blush); color: var(--blush-ink); font-weight: 800; font-size: 1.1rem;
+  padding: 0.6rem 1.3rem; border-radius: 999px; transition: transform 0.4s; z-index: 50;
+}
+.tv-status.show { transform: translate(-50%, 0); }
+
+.tv-sound-hint {
+  position: fixed; right: 1.4rem; top: 1.2rem; z-index: 50; outline: none;
+  font: inherit; font-weight: 700; font-size: 1rem; color: var(--muted);
+  background: var(--card); border: 0; border-radius: 999px; padding: 0.6rem 1.1rem;
+  display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line);
+  cursor: pointer;
+}
+.tv-sound-hint .icon-sm { width: 1.2em; height: 1.2em; }

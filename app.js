@@ -223,6 +223,7 @@ function bust() {
   if (p.bustStreak === 3) toast(pick("qThreeBusts", { name: p.name }), "bad");
   else toast(pick("qBust", { name: p.name }), "bad");
   Sound.bust();
+  TV.send({ type: "shake" });
   // Shake the card first, THEN move on to the next player
   const card = document.querySelector(".turn-card");
   card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
@@ -329,6 +330,7 @@ function avatarHTML(avatar, size = "sm") {
 
 function update(opts = {}) {
   save();
+  TV.sendState(); // if a TV is connected, send it the new state (tv-link.js)
   render(opts);
   keepAwake();
 }
@@ -610,6 +612,7 @@ function renderBoard() {
 
 // ----- Confetti: little pastel paper bits falling for 3 seconds -----
 function confetti() {
+  TV.send({ type: "confetti" });
   const canvas = $("confetti");
   const ctx = canvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
@@ -812,9 +815,13 @@ document.querySelectorAll(".rules-open").forEach((btn) =>
   btn.addEventListener("click", () => {
     $("rules-body").innerHTML = rulesAsHTML(state.target);
     $("rules").classList.remove("hidden");
+    TV.send({ type: "rules", open: true }); // the TV shows them too
   })
 );
-$("rules-close").addEventListener("click", () => $("rules").classList.add("hidden"));
+$("rules-close").addEventListener("click", () => {
+  $("rules").classList.add("hidden");
+  TV.send({ type: "rules", open: false });
+});
 
 // ----- Drag to reorder players (setup screen) -----
 // Press on the ⋮⋮ handle, slide up or down, let go. "Pointer" events
@@ -864,6 +871,7 @@ document.addEventListener("visibilitychange", keepAwake);
 // ----- Pop-up one-liners ("toasts") -----
 let toastTimer = null;
 function toast(text, mood = "") {
+  TV.send({ type: "toast", text, mood });
   const el = $("toast");
   el.textContent = text;
   el.className = `toast ${mood}`;
@@ -908,6 +916,8 @@ function applyLang() {
   applyLangToPage();
   $("lang-btn").innerHTML = `${icon("globe", "icon-sm")} ${t("label")}`;
   render();
+  TV.draw();
+  TV.sendState();
 }
 $("lang-btn").addEventListener("click", () => {
   const keys = Object.keys(LANGS);
@@ -934,6 +944,7 @@ function applyTheme() {
   // the colour of the iPhone status bar area
   const dark = theme === "dark" || (theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
   document.querySelector('meta[name="theme-color"]').content = dark ? "#14121d" : "#f7f6fb";
+  TV.sendState();
 }
 document.querySelectorAll(".theme-btn").forEach((b) =>
   b.addEventListener("click", () => {
@@ -951,5 +962,27 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
+// ----- TV sheet: type the code the TV shows -----
+function openTvSheet() {
+  $("tv-url").textContent = location.host + location.pathname.replace(/index\.html$/, "") + "tv";
+  $("tv-code").value = TV.code && TV.status !== "on" ? TV.code : "";
+  TV.draw();
+  $("tv-sheet").classList.remove("hidden");
+}
+document.querySelectorAll(".tv-btn").forEach((b) => b.addEventListener("click", openTvSheet));
+$("tv-code").addEventListener("input", (e) => {
+  // capitals only, letters only, max 4
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
+  if (e.target.value.length === 4) TV.connect(e.target.value, true); // connect as soon as 4 letters are in
+});
+$("tv-go").addEventListener("click", () => {
+  const code = $("tv-code").value;
+  if (code.length === 4) TV.connect(code, true);
+  else $("tv-code").focus();
+});
+$("tv-disconnect").addEventListener("click", () => TV.disconnect());
+$("tv-close").addEventListener("click", () => $("tv-sheet").classList.add("hidden"));
+
 // Draw the screen for the first time (applyLang fills in the words, then draws)
 applyLang();
+TV.init(); // reconnect to last time's TV, if there was one

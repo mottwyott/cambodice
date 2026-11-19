@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- This page lives in /tv/ so its address is short to type on a TV remote.
+       <base> makes every file path below start from the main folder,
+       so "style.css" and "avatars/…" work exactly like on the phone. -->
+  <base href="../" />
+  <title>Cambodice TV</title>
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="icons/icon-180.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="tv.css" />
+</head>
+<body class="tv">
+
+  <!-- ============ WAITING: shows the code to type on the phone ============ -->
+  <section id="tv-wait" class="tv-screen tv-center">
+    <h1 class="logo tv-logo" aria-label="Cambodice">Camb<i class="logo-die"></i>dice</h1>
+    <div class="tv-wait-title" data-t="tvWaitTitle"></div>
+    <div class="tv-wait-sub" data-t="tvWaitSub"></div>
+    <div class="tv-code-big" id="tv-code"></div>
+    <div class="tv-net" id="tv-net"></div>
+  </section>
+
+  <!-- ============ LOBBY: phone connected, players being added ============ -->
+  <section id="tv-lobby" class="tv-screen hidden">
+    <div class="tv-lobby-main">
+      <h1 class="logo tv-logo" aria-label="Cambodice">Camb<i class="logo-die"></i>dice</h1>
+      <div class="tv-lobby-title" id="lobby-title"></div>
+      <div class="tv-lobby-players" id="lobby-players"></div>
+      <div class="tv-pill" id="lobby-target"></div>
+    </div>
+    <aside class="tv-panel" id="lobby-board-wrap">
+      <div class="tv-panel-title"><i data-icon="trophy" class="icon-sm"></i> <span data-t="leaderboard"></span></div>
+      <ol class="sc-list tv-lb" id="lobby-board"></ol>
+    </aside>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="tv-game" class="tv-screen tv-game hidden">
+    <div class="tv-left">
+      <div class="tv-head">
+        <span class="logo tv-logo-sm">Camb<i class="logo-die"></i>dice</span>
+        <span class="tv-pill" id="game-target"></span>
+      </div>
+      <ul class="scoreboard tv-board" id="tv-board"></ul>
+    </div>
+    <div class="tv-right">
+      <div id="tv-banner" class="banner tv-banner hidden"></div>
+      <div class="turn-card tv-turn" id="tv-turn">
+        <div id="tv-turn-avatar"></div>
+        <div class="turn-name tv-turn-name" id="tv-turn-name"></div>
+        <div class="turn-points tv-turn-points num" id="tv-turn-points">0</div>
+        <div class="tv-turn-label" data-t="tvTurnPts"></div>
+        <div class="turn-hint tv-turn-hint" id="tv-turn-hint"></div>
+      </div>
+      <div id="tv-last" class="last-turn tv-last hidden"></div>
+    </div>
+  </section>
+
+  <!-- ============ WINNER ============ -->
+  <section id="tv-winner" class="tv-screen tv-winner hidden">
+    <div class="tv-win-main">
+      <div class="winner-eyebrow" data-t="winner"></div>
+      <h1 class="winner-name" id="tv-winner-name"></h1>
+      <div class="podium" id="tv-podium"></div>
+    </div>
+    <aside class="tv-win-side">
+      <div class="shot-note hidden" id="tv-shot"></div>
+      <ul id="tv-final" class="scoreboard final"></ul>
+      <div id="tv-awards-wrap" class="hidden">
+        <div class="section-label" data-t="awards"></div>
+        <ul class="awards" id="tv-awards"></ul>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ============ OVERLAYS ============ -->
+  <canvas id="confetti"></canvas>
+  <div id="toast" class="toast tv-toast"></div>
+
+  <section id="score-check" class="score-check tv-sc hidden">
+    <div class="sc-card">
+      <div class="sc-eyebrow" id="sc-eyebrow"></div>
+      <div class="sc-title" id="sc-title"></div>
+      <div class="sc-sub" id="sc-sub"></div>
+      <ol class="sc-list" id="sc-list"></ol>
+    </div>
+  </section>
+
+  <section id="tv-rules" class="score-check tv-rules hidden">
+    <div class="sc-card">
+      <div class="sc-title" data-t="houseRules"></div>
+      <div id="tv-rules-body"></div>
+    </div>
+  </section>
+
+  <div class="tv-status" id="tv-status"></div>
+  <button class="tv-sound-hint" id="tv-sound-hint"><i data-icon="mute" class="icon-sm"></i> <span data-t="tvSoundHint"></span></button>
+
+  <script src="icons.js"></script>
+  <script src="sounds.js"></script>
+  <script src="lang.js"></script>
+  <script src="rules.js"></script>
+  <script src="lib/peerjs.min.js"></script>
+  <script src="net.js"></script>
+  <script src="tv.js"></script>
+</body>
+</html>

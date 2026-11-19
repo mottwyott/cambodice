@@ -50,7 +50,10 @@
       <button class="btn btn-ghost btn-tiny theme-btn"></button>
       <button class="btn btn-ghost btn-tiny" id="lang-btn"></button>
     </div>
-    <button class="btn btn-ghost btn-tiny" id="lb-open"><i data-icon="trophy" class="icon-sm"></i> <span data-t="leaderboard"></span></button>
+    <div class="footer-row">
+      <button class="btn btn-ghost btn-tiny" id="lb-open"><i data-icon="trophy" class="icon-sm"></i> <span data-t="leaderboard"></span></button>
+      <button class="btn btn-ghost btn-tiny tv-btn"><i data-icon="tv" class="icon-sm"></i> <span data-t="tv"></span></button>
+    </div>
   </section>
 
   <!-- ============ SCREEN 2: THE GAME ============ -->
@@ -99,6 +102,7 @@
       <button class="btn btn-ghost btn-tiny rules-open"><i data-icon="book" class="icon-sm"></i> <span data-t="rules"></span></button>
       <button id="sound-btn" class="btn btn-ghost btn-tiny"></button>
       <button class="btn btn-ghost btn-tiny theme-btn icon-only"></button>
+      <button class="btn btn-ghost btn-tiny tv-btn icon-only" aria-label="TV"><i data-icon="tv" class="icon-sm"></i></button>
       <button id="menu-btn" class="btn btn-ghost btn-tiny"><i data-icon="flag" class="icon-sm"></i> <span data-t="endGame"></span></button>
     </div>
   </section>
@@ -203,6 +207,30 @@
     </div>
   </section>
 
+  <!-- ============ TV CONNECT (type the code the TV shows) ============ -->
+  <section id="tv-sheet" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-title" data-t="tvTitle"></div>
+      <div id="tv-off">
+        <p class="tv-step" data-t="tvStep1"></p>
+        <div class="tv-url" id="tv-url"></div>
+        <p class="tv-step" data-t="tvStep2"></p>
+        <input id="tv-code" class="tv-code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" />
+        <p class="tv-msg" id="tv-msg"></p>
+      </div>
+      <div id="tv-on" class="tv-on hidden">
+        <i data-icon="tv" class="tv-on-icon"></i>
+        <b id="tv-on-text"></b>
+        <p data-t="tvConnectedSub"></p>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" id="tv-close" data-t="done"></button>
+        <button class="btn btn-go" id="tv-go" data-t="tvConnect"></button>
+        <button class="btn btn-bust hidden" id="tv-disconnect" data-t="tvDisconnect"></button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ RULES (slides up over whatever screen you're on) ============ -->
   <section id="rules" class="rules-sheet hidden">
     <div class="rules-inner">
@@ -219,6 +247,9 @@
   <script src="sounds.js"></script>
   <script src="lang.js"></script>
   <script src="rules.js"></script>
+  <script src="lib/peerjs.min.js"></script>
+  <script src="net.js"></script>
+  <script src="tv-link.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

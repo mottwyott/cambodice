@@ -17,6 +17,10 @@ Plain HTML, CSS and JavaScript. No frameworks, no build step.
 | `manifest.json` | Tells the iPhone the app's name, icon and colors for the home screen. |
 | `sw.js` | The "service worker": saves a copy so the app opens offline. |
 | `icons/` | Home-screen icons. |
+| `net.js` | Shared by phone and TV: the 4-letter codes and the matchmaker settings. |
+| `tv-link.js` | Phone side of the TV: connects to the TV and sends it the game after every change. |
+| `tv/index.html`, `tv.js`, `tv.css` | The **TV page**. It shows a code, waits for the phone, then draws whatever the phone sends, big. |
+| `lib/peerjs.min.js` | PeerJS, a free library that lets the phone and TV talk directly (WebRTC). |
 
 ## The big idea in app.js
 
@@ -46,6 +50,16 @@ Each player is either an emoji or a photo. Photos get shrunk to a 200×200 squar
 in `photoToAvatar()` (app.js) so they save fast and can be sent to the TV later.
 An avatar is just a piece of text: an emoji like "🦊", or a photo written out as
 `data:image/jpeg...`. That's why the same value works on the phone and the TV.
+
+## The TV scoreboard
+
+1. On the TV (or any computer), open `mottwyott.github.io/cambodice/tv`. It shows a 4-letter code.
+2. On the phone, tap **TV** and type the code. Done: the TV now mirrors the game, with sounds.
+3. The phone remembers the TV and reconnects by itself after it's been locked.
+
+The TV never changes the game. The phone is the boss: after every tap it sends the TV the whole
+game state, plus little "events" for pop-ups, sounds, the bust shake and confetti.
+To find each other they use PeerJS's free matchmaker (0.peerjs.com); after that they talk directly.
 
 ## Changing the rules
 
