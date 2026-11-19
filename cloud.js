@@ -19,7 +19,15 @@
 // ---------------------------------------------------------------
 
 // Paste the config from the Firebase console here
-const FIREBASE_CONFIG = null;
+// (these values are public by design: the security rules are what protect the data)
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDz6XFL1-yvM-0OZXp9FVHV163XR_1uTmY",
+  authDomain: "mottwyott-b980f.firebaseapp.com",
+  projectId: "mottwyott-b980f",
+  storageBucket: "mottwyott-b980f.firebasestorage.app",
+  messagingSenderId: "265079824855",
+  appId: "1:265079824855:web:bac6cb56fd3b300a2d2b92",
+};
 
 const Cloud = {
   on: false,       // is the online database switched on?
