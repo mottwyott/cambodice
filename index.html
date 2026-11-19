@@ -133,8 +133,25 @@
         <h1 data-t="leaderboard"></h1>
         <button id="lb-close" class="btn btn-small" data-t="done"></button>
       </div>
+      <div class="target-pick lb-tabs" id="lb-tabs">
+        <button class="btn seg" data-lbtab="board" data-t="leaderboard"></button>
+        <button class="btn seg" data-lbtab="history" data-t="history"></button>
+      </div>
       <ol class="sc-list lb-list" id="lb-list"></ol>
+      <ul class="sc-list lb-list hist-list hidden" id="hist-list"></ul>
       <button class="btn btn-ghost btn-tiny lb-reset" id="lb-reset" data-t="lbReset"></button>
+    </div>
+  </section>
+
+  <!-- ============ ONE GAME FROM THE HISTORY ============ -->
+  <section id="game-detail" class="rules-sheet hidden">
+    <div class="rules-inner">
+      <div class="rules-head">
+        <h1 id="gd-title" class="picker-title"></h1>
+        <button id="gd-close" class="btn btn-small" data-t="done"></button>
+      </div>
+      <div id="gd-body"></div>
+      <button class="btn btn-ghost btn-tiny lb-reset gd-delete" id="gd-delete" data-t="gameDelete"></button>
     </div>
   </section>
 
@@ -251,5 +268,6 @@
   <script src="net.js"></script>
   <script src="tv-link.js"></script>
   <script src="app.js"></script>
+  <script src="history.js"></script>
 </body>
 </html>

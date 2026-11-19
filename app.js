@@ -124,6 +124,7 @@ function startGame() {
   state.scoreCheck = null;
   state.scoreCheckDone = false;
   state.lastTurn = null;
+  state.log = [];          // every turn: [player index, points, bust?] (for the game history chart)
   history = [];
   update();
 }
@@ -163,6 +164,7 @@ function bank() {
   const wasOnBoard = p.onBoard;
   state.lastTurn = { player: state.current, points: pts, bust: false };
   p.score += pts;
+  (state.log ||= []).push([state.current, pts, 0]);
   p.onBoard = true;
 
   // stats for awards
@@ -215,6 +217,7 @@ function bust() {
   busting = true;
   remember();
   state.lastTurn = { player: state.current, points: turnTotal(), bust: true };
+  (state.log ||= []).push([state.current, turnTotal(), 1]);
   const p = currentPlayer();
   p.turns = (p.turns || 0) + 1;
   p.busts = (p.busts || 0) + 1;
@@ -574,41 +577,7 @@ function awards() {
   return out;
 }
 
-// ----- All-time leaderboard (kept on this phone, survives between games) -----
-const LB_KEY = "cambodice-alltime";
-function loadBoard() {
-  try { return JSON.parse(localStorage.getItem(LB_KEY)) || {}; } catch (e) { return {}; }
-}
-function saveBoard(board) {
-  try { localStorage.setItem(LB_KEY, JSON.stringify(board)); } catch (e) {}
-}
-function recordGame(list, losers) {
-  const board = loadBoard();
-  list.forEach((p, i) => {
-    const row = (board[nameKey(p.name)] ||= { wins: 0, games: 0, shots: 0 });
-    row.name = p.name; // remember the latest spelling to show
-    row.games++;
-    row.points = (row.points || 0) + p.score; // total points ever
-    row.avatar = p.avatar;
-    if (i === 0) row.wins++;
-    if (losers.includes(p)) row.shots++;
-  });
-  saveBoard(board);
-}
-function renderBoard() {
-  const board = loadBoard();
-  const rows = Object.entries(board).sort((a, b) => b[1].wins - a[1].wins || a[1].games - b[1].games);
-  $("lb-list").innerHTML = rows.length
-    ? rows.map(([name, r], i) => `<li>
-        <span class="sc-rank">${i + 1}</span>
-        ${avatarHTML(r.avatar, "md")}
-        <span class="name">${esc(r.name || name)}<small>${t("lbWins")}: ${r.wins} · ${t("lbGames")}: ${r.games} · ${t("lbPoints")}: ${fmt(r.points || 0)}</small></span>
-        <span class="lb-shots">${r.shots > 0
-          ? `<b>${r.shots}</b><img src="badges/shot.png" alt="" /><button class="btn btn-small" data-paid="${esc(name)}">${t("lbPaid")}</button>`
-          : ""}</span>
-      </li>`).join("")
-    : `<li class="lb-empty">${t("lbEmpty")}</li>`;
-}
+// The all-time leaderboard and game history live in history.js
 
 // ----- Confetti: little pastel paper bits falling for 3 seconds -----
 function confetti() {
@@ -881,22 +850,6 @@ function toast(text, mood = "") {
   toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
 }
 
-// ----- Leaderboard sheet -----
-$("lb-open").addEventListener("click", () => { renderBoard(); $("leaderboard").classList.remove("hidden"); });
-$("lb-close").addEventListener("click", () => $("leaderboard").classList.add("hidden"));
-$("lb-list").addEventListener("click", (e) => {
-  const name = e.target.closest("[data-paid]")?.dataset.paid;
-  if (!name) return;
-  const board = loadBoard();
-  if (board[name] && board[name].shots > 0) board[name].shots--;
-  saveBoard(board);
-  Sound.bank();
-  renderBoard();
-});
-$("lb-reset").addEventListener("click", () =>
-  askConfirm(t("lbReset"), t("lbResetText"), t("lbReset"), () => { saveBoard({}); renderBoard(); })
-);
-
 // ----- Easter egg: tap the logo die 5 times quickly -----
 let logoTaps = [];
 document.querySelector(".logo").addEventListener("click", () => {
@@ -983,6 +936,10 @@ $("tv-go").addEventListener("click", () => {
 $("tv-disconnect").addEventListener("click", () => TV.disconnect());
 $("tv-close").addEventListener("click", () => $("tv-sheet").classList.add("hidden"));
 
-// Draw the screen for the first time (applyLang fills in the words, then draws)
-applyLang();
-TV.init(); // reconnect to last time's TV, if there was one
+// Draw the screen for the first time (applyLang fills in the words, then draws).
+// "DOMContentLoaded" waits until every script on the page has loaded
+// (history.js comes after this file).
+document.addEventListener("DOMContentLoaded", () => {
+  applyLang();
+  TV.init(); // reconnect to last time's TV, if there was one
+});

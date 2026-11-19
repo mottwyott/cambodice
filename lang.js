@@ -10,6 +10,14 @@
 const LANGS = {
   en: {
     label: "English",
+    history: "History",
+    histTo: "to {target}",
+    earlier: "Earlier games",
+    earlierSub: "{n} games from before the history was kept. Their wins, points and shots still count.",
+    chartTitle: "How it went",
+    gdStats: "{turns} turns · bust {busts}× · best turn {best}",
+    gameDelete: "Delete game",
+    gameDeleteText: "It comes off the leaderboard too: wins, points and shots owed.",
     // TV link (phone side)
     tv: "TV",
     tvTitle: "Show it on the TV",
@@ -135,6 +143,14 @@ const LANGS = {
 
   pirate: {
     label: "Pirate",
+    history: "Ship's log",
+    histTo: "to {target}",
+    earlier: "Old voyages",
+    earlierSub: "{n} voyages from before the log was kept. Their plunder still counts.",
+    chartTitle: "How the battle went",
+    gdStats: "{turns} turns · {busts} sinkings · best haul {best}",
+    gameDelete: "Feed it to the sharks",
+    gameDeleteText: "It be struck from the Hall o' Legends too: wins, doubloons an' grog owed.",
     tv: "TV",
     tvTitle: "Hoist it on the big screen",
     tvStep1: "1. On the TV's web browser, sail to:",
@@ -257,6 +273,14 @@ const LANGS = {
 
   uk: {
     label: "UK slang (rude)",
+    history: "The receipts",
+    histTo: "to {target}",
+    earlier: "The olden days",
+    earlierSub: "{n} games from before we kept receipts. Still counts, so don't get excited.",
+    chartTitle: "How it all went to shit",
+    gdStats: "{turns} turns · {busts} bottle jobs · best turn {best}",
+    gameDelete: "Bin this game",
+    gameDeleteText: "Wipes it off the Hall of Shame too: wins, points and shots owed. Cheeky.",
     tv: "Telly",
     tvTitle: "Chuck it on the telly",
     tvStep1: "1. On the telly's web browser, open:",

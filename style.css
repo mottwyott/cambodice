@@ -585,3 +585,27 @@ body, .card, .btn, .scoreboard, .turn-card { transition: background-color 0.3s, 
 .tv-on b { display: block; font-size: 1.1rem; margin-top: 6px; color: var(--mint-ink); }
 .tv-on p { color: var(--muted); font-weight: 500; margin: 6px 0 0; }
 .tv-on-icon { width: 54px; height: 54px; color: var(--mint-ink); }
+
+/* ---------- Leaderboard tabs + game history ---------- */
+.lb-tabs { margin-bottom: 12px; }
+.hist-item { cursor: pointer; }
+.hist-item:active { background: var(--tint); }
+.hist-item .name small { display: block; color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+.hist-item .hist-others { color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-list .name { min-width: 0; }
+.hist-score { font-weight: 800; color: var(--butter-ink); }
+.gd-head { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 4px 14px; }
+.gd-head small { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-left: 4px; }
+.gd-chart { background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); padding: 12px 12px 10px; margin: 8px 0 16px; }
+.chart { width: 100%; height: 150px; display: block; }
+.chart-goal { stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.chart-key { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+.chart-key i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.gd-list { background: var(--card); border-radius: var(--radius-lg); padding: 6px; box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); margin-bottom: 16px; }
+.gd-list .name small { display: block; color: var(--muted); font-size: 0.75rem; font-weight: 600; }
+.gd-shot { width: 18px; height: 18px; vertical-align: -3px; margin-left: 5px; }
+.gd-note { color: var(--muted); font-weight: 500; margin: 0 4px; }
+.gd-delete { color: var(--blush-ink); }
+#game-detail .section-label { margin: 0 6px 0; }
+.hist-list li:first-child, .gd-list li:first-child:not(:only-child) { background: transparent; }
+.gd-list li:first-child { background: var(--gold-tint); }

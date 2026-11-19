@@ -1,0 +1,271 @@
+// history.js
+// ---------------------------------------------------------------
+// Game history + the all-time leaderboard.
+//
+// The big idea: we only SAVE finished games (who played, scores,
+// awards, every turn). The leaderboard is never saved by itself:
+// it's worked out from the games every time it's shown.
+// So deleting a wrong or test game automatically fixes everyone's
+// wins, points and shots owed.
+//
+// Saved on this phone (localStorage):
+//   cambodice-games    list of finished games
+//   cambodice-paid     how many shots each person has paid off
+//   cambodice-faces    latest photo of each person (kept apart so
+//                      big photos aren't copied into every game)
+//   cambodice-alltime  the OLD leaderboard from before history
+//                      existed. Still counted, shown as "Earlier games".
+// ---------------------------------------------------------------
+
+const GAMES_KEY = "cambodice-games";
+const PAID_KEY = "cambodice-paid";
+const FACES_KEY = "cambodice-faces";
+const LEGACY_KEY = "cambodice-alltime";
+
+function loadJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
+}
+function saveJSON(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+}
+
+// All finished games, newest first
+const loadGames = () => loadJSON(GAMES_KEY, []).sort((a, b) => (a.date < b.date ? 1 : -1));
+const saveGames = (games) => saveJSON(GAMES_KEY, games);
+
+// ----- Saving a finished game ------------------------------------
+// Called once by the winner screen. list = players best-first.
+function recordGame(list, losers) {
+  const faces = loadJSON(FACES_KEY, {});
+  const game = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    date: new Date().toISOString(),
+    target: state.target,
+    // players in turn order, with the stats for the details screen
+    players: state.players.map((p) => {
+      const photo = p.avatar && p.avatar.startsWith("data:");
+      if (photo) faces[nameKey(p.name)] = p.avatar;
+      return {
+        name: p.name,
+        avatar: photo ? null : p.avatar, // photos live in cambodice-faces instead
+        score: p.score,
+        turns: p.turns || 0,
+        busts: p.busts || 0,
+        biggest: p.biggest || 0,
+        bestStreak: p.bestStreak || 0,
+      };
+    }),
+    winner: list[0].name,
+    losers: losers.map((p) => p.name),
+    awards: awards(),
+    log: state.log || [],
+  };
+  saveJSON(FACES_KEY, faces);
+  saveGames([game, ...loadGames()]);
+}
+
+function deleteGame(id) {
+  if (id === "earlier") localStorage.removeItem(LEGACY_KEY);
+  else saveGames(loadGames().filter((g) => g.id !== id));
+}
+
+// ----- The leaderboard, worked out from the games -----------------
+// Returns { "mott": { name, wins, games, points, shots, avatar }, ... }
+function loadBoard() {
+  const board = {};
+  const faces = loadJSON(FACES_KEY, {});
+  const row = (key) => (board[key] ||= { name: key, wins: 0, games: 0, points: 0, shots: 0, avatar: null });
+
+  // 1. the old leaderboard from before history was kept
+  Object.entries(loadJSON(LEGACY_KEY, {})).forEach(([key, old]) => {
+    const r = row(key);
+    r.name = old.name || key;
+    r.avatar = old.avatar;
+    r.wins += old.wins || 0;
+    r.games += old.games || 0;
+    r.points += old.points || 0;
+    r.shots += old.shots || 0;
+  });
+
+  // 2. every saved game, oldest first (so the newest name/face wins)
+  [...loadGames()].reverse().forEach((g) => {
+    const losers = g.losers.map(nameKey);
+    g.players.forEach((p) => {
+      const key = nameKey(p.name);
+      const r = row(key);
+      r.name = p.name;
+      r.avatar = p.avatar || faces[key] || r.avatar;
+      r.games++;
+      r.points += p.score;
+      if (nameKey(g.winner) === key) r.wins++;
+      if (losers.includes(key)) r.shots++;
+    });
+  });
+
+  // 3. take off the shots people have paid
+  const paid = loadJSON(PAID_KEY, {});
+  Object.entries(board).forEach(([key, r]) => (r.shots = Math.max(0, r.shots - (paid[key] || 0))));
+  return board;
+}
+
+function payShot(key) {
+  const paid = loadJSON(PAID_KEY, {});
+  paid[key] = (paid[key] || 0) + 1;
+  saveJSON(PAID_KEY, paid);
+}
+
+function resetEverything() {
+  [GAMES_KEY, PAID_KEY, LEGACY_KEY].forEach((k) => localStorage.removeItem(k));
+}
+
+// ===== Drawing ====================================================
+
+let lbTab = "board"; // "board" | "history"
+
+function renderBoard() {
+  document.querySelectorAll("[data-lbtab]").forEach((b) => b.classList.toggle("on", b.dataset.lbtab === lbTab));
+  $("lb-list").classList.toggle("hidden", lbTab !== "board");
+  $("hist-list").classList.toggle("hidden", lbTab !== "history");
+  if (lbTab === "history") return renderHistory();
+
+  const rows = Object.entries(loadBoard()).sort((a, b) => b[1].wins - a[1].wins || a[1].games - b[1].games);
+  $("lb-list").innerHTML = rows.length
+    ? rows.map(([key, r], i) => `<li>
+        <span class="sc-rank">${i + 1}</span>
+        ${avatarHTML(r.avatar, "md")}
+        <span class="name">${esc(r.name)}<small>${t("lbWins")}: ${r.wins} · ${t("lbGames")}: ${r.games} · ${t("lbPoints")}: ${fmt(r.points)}</small></span>
+        <span class="lb-shots">${r.shots > 0
+          ? `<b>${r.shots}</b><img src="badges/shot.png" alt="" /><button class="btn btn-small" data-paid="${esc(key)}">${t("lbPaid")}</button>`
+          : ""}</span>
+      </li>`).join("")
+    : `<li class="lb-empty">${t("lbEmpty")}</li>`;
+}
+
+// "Thu 19 Nov, 21:40"
+function niceDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + ", " +
+    d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+function faceOf(p) {
+  return p.avatar || loadJSON(FACES_KEY, {})[nameKey(p.name)] || null;
+}
+
+function renderHistory() {
+  const games = loadGames();
+  const legacy = Object.values(loadJSON(LEGACY_KEY, {}));
+  const items = games.map((g) => {
+    const winner = g.players.find((p) => p.name === g.winner) || g.players[0];
+    const others = [...g.players].sort((a, b) => b.score - a.score).filter((p) => p !== winner);
+    return `<li class="hist-item" data-game="${g.id}">
+      ${avatarHTML(faceOf(winner), "md")}
+      <span class="name">${esc(t("wins", { name: winner.name }))}
+        <small>${niceDate(g.date)} · ${t("histTo", { target: fmt(g.target) })}</small>
+        <small class="hist-others">${others.map((p) => `${esc(p.name)} ${fmt(p.score)}`).join(" · ")}</small>
+      </span>
+      <span class="hist-score num">${fmt(winner.score)}</span>
+    </li>`;
+  });
+  if (legacy.length) {
+    const n = Math.max(...legacy.map((r) => r.games || 0));
+    items.push(`<li class="hist-item" data-game="earlier">
+      <span class="avatar avatar-md">🗂️</span>
+      <span class="name">${t("earlier")}<small>${t("earlierSub", { n })}</small></span>
+    </li>`);
+  }
+  $("hist-list").innerHTML = items.length ? items.join("") : `<li class="lb-empty">${t("lbEmpty")}</li>`;
+}
+
+// Line colours for the chart (one per player)
+const LINE_COLOURS = ["#6a52c9", "#1f9d6a", "#d0506d", "#d29a00", "#3b82c4", "#b5683a", "#8e5bb5", "#4a9c9c"];
+
+// A small line chart: everyone's score after each turn
+function chartSVG(g) {
+  const W = 340, H = 150, pad = 6;
+  const n = g.players.length;
+  const totals = g.players.map(() => 0);
+  const lines = g.players.map(() => [[0, 0]]);
+  g.log.forEach(([who, pts, bust], i) => {
+    if (!bust) totals[who] += pts;
+    lines[who].push([i + 1, totals[who]]);
+  });
+  const maxX = Math.max(1, g.log.length);
+  const maxY = Math.max(g.target, ...g.players.map((p) => p.score));
+  const x = (v) => pad + (v / maxX) * (W - pad * 2);
+  const y = (v) => H - pad - (v / maxY) * (H - pad * 2);
+  const goal = `<line x1="${pad}" x2="${W - pad}" y1="${y(g.target)}" y2="${y(g.target)}" class="chart-goal" />`;
+  const paths = lines.map((pts, i) =>
+    `<polyline fill="none" stroke="${LINE_COLOURS[i % LINE_COLOURS.length]}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+      points="${pts.map(([a, b]) => `${x(a).toFixed(1)},${y(b).toFixed(1)}`).join(" ")}" />`).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Scores over the game">${goal}${paths}</svg>`;
+}
+
+let openGameId = null;
+function openGame(id) {
+  openGameId = id;
+  $("gd-delete").classList.toggle("hidden", !canDelete());
+  if (id === "earlier") {
+    $("gd-title").textContent = t("earlier");
+    $("gd-body").innerHTML = `<p class="gd-note">${t("earlierSub", { n: Math.max(...Object.values(loadJSON(LEGACY_KEY, {})).map((r) => r.games || 0)) })}</p>`;
+    $("game-detail").classList.remove("hidden");
+    return;
+  }
+  const g = loadGames().find((x) => x.id === id);
+  if (!g) return;
+  const order = [...g.players].sort((a, b) => b.score - a.score);
+  $("gd-title").textContent = niceDate(g.date);
+  $("gd-body").innerHTML = `
+    <div class="gd-head">${t("wins", { name: g.winner })} <small>${t("histTo", { target: fmt(g.target) })}</small></div>
+    ${g.log.length ? `<div class="section-label">${t("chartTitle")}</div>
+      <div class="gd-chart">${chartSVG(g)}
+        <div class="chart-key">${g.players.map((p, i) => `<span><i style="background:${LINE_COLOURS[i % LINE_COLOURS.length]}"></i>${esc(p.name)}</span>`).join("")}</div>
+      </div>` : ""}
+    <ol class="sc-list gd-list">${order.map((p, i) => `<li>
+      <span class="sc-rank">${i + 1}</span>
+      ${avatarHTML(faceOf(p), "md")}
+      <span class="name">${esc(p.name)}${g.losers.includes(p.name) ? `<img class="gd-shot" src="badges/shot.png" alt="bought the shots" />` : ""}
+        <small>${t("gdStats", { turns: p.turns, busts: p.busts, best: fmt(p.biggest) })}</small></span>
+      <span class="sc-score"><b>${fmt(p.score)}</b></span>
+    </li>`).join("")}</ol>
+    ${g.awards.length ? `<div class="section-label">${t("awards")}</div><ul class="awards">${g.awards.map((a) => `<li>
+      <img src="badges/${a.badge}.png" alt="" />
+      <div><b>${t(a.title)}</b><small>${esc(a.who)} · ${t(a.title + "D", { n: a.n })}</small></div></li>`).join("")}</ul>` : ""}`;
+  $("game-detail").classList.remove("hidden");
+}
+
+// Who may delete games. On this phone only for now; once the online
+// database is switched on, only the admin (Mott) will.
+function canDelete() { return true; }
+
+// ===== Wiring =====================================================
+$("lb-open").addEventListener("click", () => { renderBoard(); $("leaderboard").classList.remove("hidden"); });
+$("lb-close").addEventListener("click", () => $("leaderboard").classList.add("hidden"));
+$("lb-tabs").addEventListener("click", (e) => {
+  const tab = e.target.closest("[data-lbtab]")?.dataset.lbtab;
+  if (tab) { lbTab = tab; renderBoard(); }
+});
+$("lb-list").addEventListener("click", (e) => {
+  const key = e.target.closest("[data-paid]")?.dataset.paid;
+  if (!key) return;
+  payShot(key);
+  Sound.bank();
+  renderBoard();
+});
+$("hist-list").addEventListener("click", (e) => {
+  const id = e.target.closest("[data-game]")?.dataset.game;
+  if (id) openGame(id);
+});
+$("gd-close").addEventListener("click", () => $("game-detail").classList.add("hidden"));
+$("gd-delete").addEventListener("click", () =>
+  askConfirm(t("gameDelete"), t("gameDeleteText"), t("gameDelete"), () => {
+    deleteGame(openGameId);
+    $("game-detail").classList.add("hidden");
+    renderBoard();
+    render();          // the regulars on the setup screen may change
+    TV.sendState();    // and the TV's leaderboard
+  })
+);
+$("lb-reset").addEventListener("click", () =>
+  askConfirm(t("lbReset"), t("lbResetText"), t("lbReset"), () => { resetEverything(); renderBoard(); render(); TV.sendState(); })
+);

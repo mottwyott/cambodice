@@ -17,6 +17,7 @@ Plain HTML, CSS and JavaScript. No frameworks, no build step.
 | `manifest.json` | Tells the iPhone the app's name, icon and colors for the home screen. |
 | `sw.js` | The "service worker": saves a copy so the app opens offline. |
 | `icons/` | Home-screen icons. |
+| `history.js` | **Game history** and the all-time leaderboard. Only finished games are saved; the leaderboard is worked out from them, so deleting a game fixes the totals. |
 | `net.js` | Shared by phone and TV: the 4-letter codes and the matchmaker settings. |
 | `tv-link.js` | Phone side of the TV: connects to the TV and sends it the game after every change. |
 | `tv/index.html`, `tv.js`, `tv.css` | The **TV page**. It shows a code, waits for the phone, then draws whatever the phone sends, big. |
