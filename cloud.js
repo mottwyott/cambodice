@@ -30,7 +30,7 @@ const FIREBASE_CONFIG = {
 };
 
 // Shown small on the History screen, handy to check a phone has the latest version
-const APP_VERSION = "v16";
+const APP_VERSION = "v17";
 
 const Cloud = {
   status: "off",   // what's happening, shown on the History screen
