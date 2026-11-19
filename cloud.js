@@ -78,7 +78,7 @@ const Cloud = {
 
     this.db.collection("faces").onSnapshot((snap) => {
       const faces = loadJSON(FACES_KEY, {});
-      snap.docs.forEach((d) => (faces[d.id] = d.data().avatar));
+      snap.docs.forEach((d) => (faces[d.id] = safeAvatar(d.data().avatar)));
       saveJSON(FACES_KEY, faces);
       refreshHistory();
     }, () => {});
@@ -118,6 +118,8 @@ const Cloud = {
   upload(game) {
     if (!this.on) return;
     const { synced, ...data } = game;
+    // Firestore can't store lists inside lists, so each turn becomes { p, pts, b }
+    data.log = (data.log || []).map((e) => (Array.isArray(e) ? { p: e[0], pts: e[1], b: e[2] } : e));
     this.db.collection("games").doc(game.id).set(data).catch(() => {});
   },
 

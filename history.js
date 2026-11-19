@@ -30,7 +30,47 @@ function saveJSON(key, value) {
 }
 
 // All finished games, newest first
-const loadGames = () => loadJSON(GAMES_KEY, []).sort((a, b) => (a.date < b.date ? 1 : -1));
+// Only games that look right are used, so one broken or junk entry
+// in the online database can never crash the app.
+// Anything that came from the internet is cleaned before it's drawn,
+// so a booby-trapped name or picture can't run code in the app.
+const BADGES = ["moneybag", "magnet", "flame", "snail", "rocket"];
+function safeAvatar(a) {
+  if (typeof a !== "string") return null;
+  if (/^avatars\/[\w-]+\.png$/.test(a)) return a;                          // a character
+  if (/^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(a)) return a; // a photo
+  if (a.length <= 16 && !/[<>"'&]/.test(a)) return a;                     // an emoji
+  return null;
+}
+const num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+function cleanGame(g) {
+  return {
+    id: g.id, date: g.date, synced: !!g.synced,
+    target: num(g.target) || 10000,
+    winner: String(g.winner),
+    players: g.players.map((p) => ({
+      name: String(p.name).slice(0, 20), avatar: safeAvatar(p.avatar), score: num(p.score),
+      turns: num(p.turns), busts: num(p.busts), biggest: num(p.biggest), bestStreak: num(p.bestStreak),
+    })),
+    losers: (g.losers || []).map(String),
+    awards: (Array.isArray(g.awards) ? g.awards : [])
+      .filter((a) => a && BADGES.includes(a.badge) && /^a[A-Z]\w+$/.test(a.title))
+      .map((a) => ({ badge: a.badge, title: a.title, who: String(a.who), n: String(a.n ?? "") })),
+    log: (Array.isArray(g.log) ? g.log : [])
+      .map((e) => (Array.isArray(e) ? e : e && typeof e === "object" ? [e.p, e.pts, e.b] : null))
+      .filter((e) => Array.isArray(e) && e.length === 3)
+      .map(([w, pts, b]) => [num(w), num(pts), b ? 1 : 0])
+      .filter(([w]) => w >= 0 && w < g.players.length),
+  };
+}
+const validGame = (g) => g && typeof g.id === "string" && typeof g.date === "string" &&
+  Array.isArray(g.players) && g.players.length > 0 &&
+  g.players.every((p) => p && typeof p.name === "string" && typeof p.score === "number") &&
+  typeof g.winner === "string" && /^[\w-]{1,40}$/.test(g.id) && !isNaN(Date.parse(g.date));
+const loadGames = () => loadJSON(GAMES_KEY, [])
+  .filter(validGame)
+  .map(cleanGame)
+  .sort((a, b) => (a.date < b.date ? 1 : -1));
 const saveGames = (games) => saveJSON(GAMES_KEY, games);
 
 // ----- Saving a finished game ------------------------------------
@@ -88,12 +128,12 @@ function loadBoard() {
   // 1. the old leaderboard from before history was kept
   Object.entries(loadJSON(LEGACY_KEY, {})).forEach(([key, old]) => {
     const r = row(key);
-    r.name = old.name || key;
-    r.avatar = old.avatar;
-    r.wins += old.wins || 0;
-    r.games += old.games || 0;
-    r.points += old.points || 0;
-    r.shots += old.shots || 0;
+    r.name = String(old.name || key);
+    r.avatar = safeAvatar(old.avatar);
+    r.wins += num(old.wins);
+    r.games += num(old.games);
+    r.points += num(old.points);
+    r.shots += num(old.shots);
   });
 
   // 2. every saved game, oldest first (so the newest name/face wins)
@@ -103,7 +143,7 @@ function loadBoard() {
       const key = nameKey(p.name);
       const r = row(key);
       r.name = p.name;
-      r.avatar = p.avatar || faces[key] || r.avatar;
+      r.avatar = p.avatar || safeAvatar(faces[key]) || r.avatar;
       r.games++;
       r.points += p.score;
       if (nameKey(g.winner) === key) r.wins++;
@@ -113,7 +153,7 @@ function loadBoard() {
 
   // 3. take off the shots people have paid
   const paid = loadJSON(PAID_KEY, {});
-  Object.entries(board).forEach(([key, r]) => (r.shots = Math.max(0, r.shots - (paid[key] || 0))));
+  Object.entries(board).forEach(([key, r]) => (r.shots = Math.max(0, r.shots - num(paid[key]))));
   return board;
 }
 
@@ -162,7 +202,7 @@ function niceDate(iso) {
 }
 
 function faceOf(p) {
-  return p.avatar || loadJSON(FACES_KEY, {})[nameKey(p.name)] || null;
+  return p.avatar || safeAvatar(loadJSON(FACES_KEY, {})[nameKey(p.name)]);
 }
 
 function renderHistory() {
@@ -181,7 +221,7 @@ function renderHistory() {
     </li>`;
   });
   if (legacy.length) {
-    const n = Math.max(...legacy.map((r) => r.games || 0));
+    const n = Math.max(...legacy.map((r) => num(r.games)));
     items.push(`<li class="hist-item" data-game="earlier">
       <span class="avatar avatar-md">🗂️</span>
       <span class="name">${t("earlier")}<small>${t("earlierSub", { n })}</small></span>
@@ -220,7 +260,7 @@ function openGame(id) {
   $("gd-delete").classList.toggle("hidden", !canDelete());
   if (id === "earlier") {
     $("gd-title").textContent = t("earlier");
-    $("gd-body").innerHTML = `<p class="gd-note">${t("earlierSub", { n: Math.max(...Object.values(loadJSON(LEGACY_KEY, {})).map((r) => r.games || 0)) })}</p>`;
+    $("gd-body").innerHTML = `<p class="gd-note">${t("earlierSub", { n: Math.max(...Object.values(loadJSON(LEGACY_KEY, {})).map((r) => num(r.games))) })}</p>`;
     $("game-detail").classList.remove("hidden");
     return;
   }
@@ -243,7 +283,7 @@ function openGame(id) {
     </li>`).join("")}</ol>
     ${g.awards.length ? `<div class="section-label">${t("awards")}</div><ul class="awards">${g.awards.map((a) => `<li>
       <img src="badges/${a.badge}.png" alt="" />
-      <div><b>${t(a.title)}</b><small>${esc(a.who)} · ${t(a.title + "D", { n: a.n })}</small></div></li>`).join("")}</ul>` : ""}`;
+      <div><b>${t(a.title)}</b><small>${esc(a.who)} · ${t(a.title + "D", { n: esc(a.n) })}</small></div></li>`).join("")}</ul>` : ""}`;
   $("game-detail").classList.remove("hidden");
 }
 
