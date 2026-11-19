@@ -3,7 +3,7 @@
 // app's files, so it still opens with no signal.
 // When you change any file, bump the version number below so phones
 // fetch the new copy.
-const CACHE = "cambodice-v9";
+const CACHE = "cambodice-v10";
 const FILES = [
   "./", "index.html", "style.css", "icons.js", "sounds.js", "lang.js", "rules.js", "app.js", "manifest.json",
   "icons/icon-180.png", "fonts/manrope-500.woff2", "fonts/manrope-600.woff2", "fonts/manrope-700.woff2", "fonts/manrope-800.woff2",

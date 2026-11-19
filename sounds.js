@@ -14,6 +14,31 @@ const Sound = {
 
   init() {
     try { this.on = localStorage.getItem("cambodice-sound") !== "off"; } catch (e) {}
+    // iPhone quirk 1: web sounds obey the ring/silent switch by default.
+    // Saying we're a "playback" app (like music) makes them play anyway.
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    // iPhone quirk 2: audio must be switched on during a real touch.
+    // So on every touch we make sure the sound engine is awake.
+    const wake = () => this.unlock();
+    document.addEventListener("touchend", wake, { passive: true });
+    document.addEventListener("pointerdown", wake, { passive: true });
+  },
+
+  // Create / wake the sound engine. iPhone puts it to sleep when the
+  // app goes to the background ("interrupted"), so we check every tap.
+  unlock() {
+    try {
+      if (!this.ctx) {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // play a tiny silent sound: this is what actually "unlocks" iOS
+        const buf = this.ctx.createBuffer(1, 1, 22050);
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.ctx.destination);
+        src.start(0);
+      }
+      if (this.ctx.state !== "running") this.ctx.resume();
+    } catch (e) {}
   },
 
   toggle() {
@@ -26,8 +51,7 @@ const Sound = {
   note(freq, delay = 0, length = 0.12, volume = 0.15, type = "sine") {
     if (!this.on) return;
     try {
-      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (this.ctx.state === "suspended") this.ctx.resume();
+      this.unlock();
       const t = this.ctx.currentTime + delay;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
