@@ -176,8 +176,9 @@ function renderBoard() {
   document.querySelectorAll("[data-lbtab]").forEach((b) => b.classList.toggle("on", b.dataset.lbtab === lbTab));
   $("lb-list").classList.toggle("hidden", lbTab !== "board");
   $("lb-reset").classList.toggle("hidden", Cloud.on); // online: delete games one by one instead
-  $("lb-cloud").classList.toggle("hidden", !Cloud.on);
-  $("lb-cloud").textContent = Cloud.isAdmin ? t("cloudAdmin") : t("cloudOn");
+  $("lb-cloud").classList.remove("hidden");
+  $("lb-cloud").innerHTML = (Cloud.on ? (Cloud.isAdmin ? t("cloudAdmin") : t("cloudOn")) : "") +
+    `<small>${APP_VERSION} · ${esc(Cloud.status)}</small>`;
   $("hist-list").classList.toggle("hidden", lbTab !== "history");
   if (lbTab === "history") return renderHistory();
 

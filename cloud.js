@@ -29,7 +29,11 @@ const FIREBASE_CONFIG = {
   appId: "1:265079824855:web:bac6cb56fd3b300a2d2b92",
 };
 
+// Shown small on the History screen, handy to check a phone has the latest version
+const APP_VERSION = "v16";
+
 const Cloud = {
+  status: "off",   // what's happening, shown on the History screen
   on: false,       // is the online database switched on?
   db: null,
   auth: null,
@@ -37,20 +41,27 @@ const Cloud = {
   ready: false,    // have we heard from the server at least once?
 
   init() {
-    if (!FIREBASE_CONFIG || typeof firebase === "undefined") return;
+    if (!FIREBASE_CONFIG) return;
+    if (typeof firebase === "undefined") { this.status = "library didn't load"; return; }
+    this.status = "starting";
     try {
       firebase.initializeApp(FIREBASE_CONFIG);
       this.db = firebase.firestore();
       // Keep a copy on the phone so it works offline and uploads later
       this.db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
       this.auth = firebase.auth();
-    } catch (e) { return; }
+    } catch (e) { this.status = "error: " + e.message; return; }
     this.on = true;
+    this.status = "signing in";
 
     // Everyone is signed in quietly as an anonymous "guest" (that's
     // enough to add games). The admin signs in with email + password.
     this.auth.onAuthStateChanged((user) => {
-      if (!user) { this.auth.signInAnonymously().catch(() => {}); return; }
+      if (!user) {
+        this.auth.signInAnonymously().catch((e) => { this.status = "sign-in failed: " + (e.code || e.message); refreshHistory(); });
+        return;
+      }
+      this.status = "connecting";
       this.isAdmin = !user.isAnonymous;
       this.listen();
       drawAdmin();
@@ -65,7 +76,7 @@ const Cloud = {
 
     this.db.collection("games").onSnapshot((snap) => {
       if (snap.metadata.fromCache && !this.ready) return; // wait for the real list
-      if (!snap.metadata.fromCache) this.ready = true;
+      if (!snap.metadata.fromCache) { this.ready = true; this.status = "connected"; }
       const online = snap.docs.map((d) => ({ ...d.data(), synced: true }));
       const onlineIds = new Set(online.map((g) => g.id));
       // Games finished on this phone that haven't made it online yet
@@ -74,14 +85,14 @@ const Cloud = {
       saveGames([...online, ...waiting]);
       this.firstRun();
       refreshHistory();
-    }, () => {});
+    }, (e) => { this.status = "error: " + (e.code || e.message); refreshHistory(); });
 
     this.db.collection("faces").onSnapshot((snap) => {
       const faces = loadJSON(FACES_KEY, {});
       snap.docs.forEach((d) => (faces[d.id] = safeAvatar(d.data().avatar)));
       saveJSON(FACES_KEY, faces);
       refreshHistory();
-    }, () => {});
+    }, (e) => { this.status = "error: " + (e.code || e.message); refreshHistory(); });
 
     this.db.collection("paid").onSnapshot((snap) => {
       if (snap.metadata.fromCache && !this.ready) return;
@@ -89,14 +100,14 @@ const Cloud = {
       snap.docs.forEach((d) => (paid[d.id] = d.data().count || 0));
       saveJSON(PAID_KEY, paid);
       refreshHistory();
-    }, () => {});
+    }, (e) => { this.status = "error: " + (e.code || e.message); refreshHistory(); });
 
     this.db.collection("meta").doc("legacy").onSnapshot((doc) => {
       if (doc.metadata.fromCache && !this.ready) return;
       if (doc.exists) saveJSON(LEGACY_KEY, doc.data().board || {});
       else if (localStorage.getItem("cambodice-cloud-moved")) localStorage.removeItem(LEGACY_KEY);
       refreshHistory();
-    }, () => {});
+    }, (e) => { this.status = "error: " + (e.code || e.message); refreshHistory(); });
   },
 
   // The very first time this phone goes online: move its old
