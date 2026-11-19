@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- viewport-fit=cover lets the app use the whole iPhone screen, notch included -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Cambodice</title>
+
+  <!-- These lines make "Add to Home Screen" on iPhone feel like a real app -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="apple-mobile-web-app-title" content="Cambodice" />
+  <meta name="theme-color" content="#fdf6f0" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ============ SCREEN 1: SETUP (add players) ============ -->
+  <section id="setup" class="screen">
+    <h1 class="logo" aria-label="Cambodice">Camb<i class="logo-die"></i>dice</h1>
+    <p class="subtitle" data-t="whosPlaying"></p>
+
+    <form id="add-player-form" class="add-player">
+      <input id="player-name" type="text" data-tp="playerName" maxlength="14" autocomplete="off" />
+      <button type="submit" class="btn btn-small" data-t="add"></button>
+    </form>
+
+    <!-- Regulars: one tap to add someone who's played before -->
+    <div class="regulars" id="regulars"></div>
+
+    <ul id="setup-list" class="setup-list"></ul>
+    <div class="spacer"></div>
+
+    <!-- Game length -->
+    <div class="section-label" data-t="playTo"></div>
+    <div class="target-pick" id="target-pick">
+      <button class="btn seg" data-target="5000">5,000</button>
+      <button class="btn seg" data-target="10000">10,000</button>
+    </div>
+
+    <button id="start-btn" class="btn btn-big btn-go" disabled data-t="startGame"></button>
+    <p class="rules-note" id="rules-note"></p>
+    <div class="footer-row">
+      <button class="btn btn-ghost btn-tiny rules-open"><i data-icon="book" class="icon-sm"></i> <span data-t="houseRules"></span></button>
+      <button class="btn btn-ghost btn-tiny theme-btn"></button>
+      <button class="btn btn-ghost btn-tiny" id="lang-btn"></button>
+    </div>
+    <button class="btn btn-ghost btn-tiny" id="lb-open"><i data-icon="trophy" class="icon-sm"></i> <span data-t="leaderboard"></span></button>
+  </section>
+
+  <!-- ============ SCREEN 2: THE GAME ============ -->
+  <section id="game" class="screen hidden">
+    <!-- Everyone's total, current player highlighted -->
+    <ul id="scoreboard" class="scoreboard"></ul>
+
+    <div id="banner" class="banner hidden"></div>
+
+    <!-- "Last turn: Sam +550" so everyone sees what just happened -->
+    <div id="last-turn" class="last-turn hidden"></div>
+
+    <!-- Whose turn + how many points they've got going this turn -->
+    <div class="turn-card">
+      <div class="turn-top">
+        <div id="turn-avatar"></div>
+        <div class="turn-name" id="turn-name"></div>
+      </div>
+      <div class="turn-points" id="turn-points">0</div>
+      <div class="turn-hint" id="turn-hint"></div>
+    </div>
+
+    <!-- Quick-add buttons for the points you just set aside -->
+    <div class="pad" id="pad">
+      <button class="btn pad-btn" data-add="50">+50</button>
+      <button class="btn pad-btn" data-add="100">+100</button>
+      <button class="btn pad-btn" data-add="150">+150</button>
+      <button class="btn pad-btn" data-add="200">+200</button>
+      <button class="btn pad-btn" data-add="300">+300</button>
+      <button class="btn pad-btn" data-add="400">+400</button>
+      <button class="btn pad-btn" data-add="500">+500</button>
+      <button class="btn pad-btn" data-add="600">+600</button>
+      <button class="btn pad-btn big" data-add="1000">+1,000</button>
+      <button class="btn pad-btn big" data-add="1500">+1,500</button>
+      <button class="btn pad-btn big" data-add="2000">+2,000</button>
+      <button class="btn pad-btn pad-other" id="other-btn" data-t="other"></button>
+    </div>
+
+    <div class="actions">
+      <button id="undo-btn" class="btn btn-ghost" aria-label="Undo"><i data-icon="undo"></i></button>
+      <button id="bust-btn" class="btn btn-bust" data-t="bust"></button>
+      <button id="bank-btn" class="btn btn-bank" data-t="bank"></button>
+    </div>
+
+    <div class="footer-row">
+      <button class="btn btn-ghost btn-tiny rules-open"><i data-icon="book" class="icon-sm"></i> <span data-t="rules"></span></button>
+      <button id="sound-btn" class="btn btn-ghost btn-tiny"></button>
+      <button class="btn btn-ghost btn-tiny theme-btn icon-only"></button>
+      <button id="menu-btn" class="btn btn-ghost btn-tiny"><i data-icon="flag" class="icon-sm"></i> <span data-t="endGame"></span></button>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 3: WINNER ============ -->
+  <section id="winner" class="screen hidden">
+    <canvas id="confetti"></canvas>
+    <div class="winner-eyebrow" data-t="winner"></div>
+    <h1 class="winner-name" id="winner-name"></h1>
+    <div class="podium" id="podium"></div>
+    <ul id="final-list" class="scoreboard final"></ul>
+    <div class="shot-note hidden" id="shot-note"></div>
+    <div id="awards-wrap" class="hidden">
+      <div class="section-label" data-t="awards"></div>
+      <ul class="awards" id="awards"></ul>
+    </div>
+    <button id="rematch-btn" class="btn btn-big btn-go" data-t="rematch"></button>
+    <button id="new-players-btn" class="btn btn-ghost" data-t="newPlayers"></button>
+  </section>
+
+  <!-- ============ POP-UP ONE-LINERS ============ -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ============ ALL-TIME LEADERBOARD ============ -->
+  <section id="leaderboard" class="rules-sheet hidden">
+    <div class="rules-inner">
+      <div class="rules-head">
+        <h1 data-t="leaderboard"></h1>
+        <button id="lb-close" class="btn btn-small" data-t="done"></button>
+      </div>
+      <ol class="sc-list lb-list" id="lb-list"></ol>
+      <button class="btn btn-ghost btn-tiny lb-reset" id="lb-reset" data-t="lbReset"></button>
+    </div>
+  </section>
+
+  <!-- ============ AVATAR PICKER ============ -->
+  <section id="picker" class="rules-sheet hidden">
+    <div class="rules-inner">
+      <div class="rules-head">
+        <h1 id="picker-title" class="picker-title"></h1>
+        <button id="picker-close" class="btn btn-small" data-t="cancel"></button>
+      </div>
+      <!-- A file input styled as a button. On iPhone it offers Camera or Photo Library. -->
+      <label class="btn btn-go photo-btn">
+        <i data-icon="camera"></i> <span data-t="photo"></span>
+        <input id="photo-input" type="file" accept="image/*" hidden />
+      </label>
+      <div class="section-label" data-t="characters"></div>
+      <div class="emoji-grid char-grid" id="char-grid"></div>
+      <div class="section-label" data-t="emoji"></div>
+      <div class="emoji-grid" id="emoji-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ SCORE CHECK POPUP (tap anywhere to close) ============ -->
+  <section id="score-check" class="score-check hidden">
+    <div class="sc-card">
+      <div class="sc-eyebrow" id="sc-eyebrow"></div>
+      <div class="sc-title" id="sc-title"></div>
+      <div class="sc-sub" id="sc-sub"></div>
+      <ol class="sc-list" id="sc-list"></ol>
+      <div class="sc-tap" data-t="tapToPlay"></div>
+    </div>
+  </section>
+
+  <!-- ============ NUMBER PAD (for "Other…") ============ -->
+  <section id="numpad" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-title" data-t="addPoints"></div>
+      <div class="numpad-display" id="numpad-display">0</div>
+      <div class="numpad-hint" id="numpad-hint"></div>
+      <div class="numpad-keys" id="numpad-keys">
+        <button class="btn key" data-key="1">1</button>
+        <button class="btn key" data-key="2">2</button>
+        <button class="btn key" data-key="3">3</button>
+        <button class="btn key" data-key="4">4</button>
+        <button class="btn key" data-key="5">5</button>
+        <button class="btn key" data-key="6">6</button>
+        <button class="btn key" data-key="7">7</button>
+        <button class="btn key" data-key="8">8</button>
+        <button class="btn key" data-key="9">9</button>
+        <button class="btn key key-soft" data-key="00">00</button>
+        <button class="btn key" data-key="0">0</button>
+        <button class="btn key key-soft" data-key="back" aria-label="Delete"><i data-icon="back"></i></button>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" id="numpad-cancel" data-t="cancel"></button>
+        <button class="btn btn-go" id="numpad-add" disabled data-t="add"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONFIRM BOX (our own, instead of the iPhone popup) ============ -->
+  <section id="confirm" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-title" id="confirm-title"></div>
+      <p class="confirm-text" id="confirm-text"></p>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" id="confirm-no" data-t="cancel"></button>
+        <button class="btn btn-bust" id="confirm-yes">Yes</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RULES (slides up over whatever screen you're on) ============ -->
+  <section id="rules" class="rules-sheet hidden">
+    <div class="rules-inner">
+      <div class="rules-head">
+        <h1 data-t="houseRules"></h1>
+        <button id="rules-close" class="btn btn-small" data-t="done"></button>
+      </div>
+      <div id="rules-body"></div>
+    </div>
+  </section>
+
+  <!-- Order matters: rules first, then the app that uses them -->
+  <script src="icons.js"></script>
+  <script src="sounds.js"></script>
+  <script src="lang.js"></script>
+  <script src="rules.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
