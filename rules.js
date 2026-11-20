@@ -16,7 +16,9 @@ const RULES = {
   // the first time anybody passes this score (about two-thirds of the way).
   // Key = game length, value = score that triggers it.
   scoreCheckAt: { 5000: 3500, 10000: 6500 },
-  minToGetOnBoard: 500,  // points needed in ONE turn before your first bank
+  // Points needed in ONE turn before your first bank.
+  // Key = game length, value = minimum (shorter games need less).
+  minToGetOnBoard: { 5000: 250, 10000: 500 },
   finalRound: true,      // everyone else gets one more turn after someone hits the target
 
   singles: { 1: 100, 5: 50 },   // lone 1s and 5s
@@ -66,6 +68,11 @@ function fmt(n) {
 // rulesAsHTML() builds the Rules screen text straight from the
 // numbers above, so the rules can never be "out of date".
 // ---------------------------------------------------------------
+// How many points you need to get on the board in a game of this length.
+function minToGetOn(target = RULES.targetScore) {
+  return RULES.minToGetOnBoard[target] || 500;
+}
+
 function rulesAsHTML(target = RULES.targetScore) {
   const R = RULES;
   const triple = (face) => (face === 1 ? R.tripleOnes : face * R.tripleMultiplier);
@@ -84,7 +91,7 @@ function rulesAsHTML(target = RULES.targetScore) {
     .map(([what, pts]) => `<tr><td>${what}</td><td>${typeof pts === "number" ? fmt(pts) : pts}</td></tr>`)
     .join("");
 
-  const vars = { dice: R.diceCount, min: fmt(R.minToGetOnBoard), target: fmt(target) };
+  const vars = { dice: R.diceCount, min: fmt(minToGetOn(target)), target: fmt(target) };
   return `
     <h2>${t("rScoring")}</h2>
     <table class="rules-table">${table}</table>

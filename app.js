@@ -140,8 +140,9 @@ function addPoints(n) {
 function bankBlocker() {
   const pts = turnTotal();
   if (pts === 0) return t("hintStart");
-  if (!currentPlayer().onBoard && pts < RULES.minToGetOnBoard) {
-    return t("hintNeed", { min: fmt(RULES.minToGetOnBoard), more: fmt(RULES.minToGetOnBoard - pts) });
+  const min = minToGetOn(state.target);
+  if (!currentPlayer().onBoard && pts < min) {
+    return t("hintNeed", { min: fmt(min), more: fmt(min - pts) });
   }
   return null;
 }
