@@ -104,7 +104,7 @@ function showStatus(text) {
 // number, every name really is text. (Belt and braces: only our phone
 // should ever be connected, but this keeps the TV safe if not.)
 const num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
-const str = (x, max = 40) => String(x ?? "").slice(0, max);
+const str = (x, max = 40) => String(x === undefined || x === null ? "" : x).slice(0, max);
 function cleanState(m) {
   const st = m.state || {};
   const players = (Array.isArray(st.players) ? st.players : []).slice(0, 12).map((p) => ({
@@ -311,7 +311,7 @@ function drawWinner() {
   const shot = $("tv-shot");
   if (list.length > 1 && losers.length < list.length) {
     const names = losers.map((p) => p.name);
-    const who = names.length === 1 ? names[0] : names.slice(0, -1).join(", ") + ` ${t("and")} ` + names.at(-1);
+    const who = names.length === 1 ? names[0] : names.slice(0, -1).join(", ") + ` ${t("and")} ` + names[names.length - 1];
     shot.innerHTML = `<span class="shot-faces">${losers.map((p) => avatarHTML(p.avatar, "md")).join("")}</span>
       <img class="shot-badge" src="badges/shot.png" alt="" /><span>${t(names.length === 1 ? "shotOne" : "shotMany", { who: `<b>${esc(who)}</b>` })}</span>`;
     shot.classList.remove("hidden");
@@ -320,7 +320,7 @@ function drawWinner() {
   const aw = (Array.isArray(S.awards) ? S.awards : []).filter((a) => a && BADGES.includes(a.badge) && /^a[A-Z]\w+$/.test(a.title));
   $("tv-awards").innerHTML = aw
     .map((a) => `<li><img src="badges/${a.badge}.png" alt="" />
-      <div><b>${t(a.title)}</b><small>${esc(String(a.who))} · ${t(a.title + "D", { n: esc(String(a.n ?? "")) })}</small></div></li>`)
+      <div><b>${t(a.title)}</b><small>${esc(String(a.who))} · ${t(a.title + "D", { n: esc(str(a.n)) })}</small></div></li>`)
     .join("");
   $("tv-awards-wrap").classList.toggle("hidden", aw.length === 0);
 }

@@ -520,9 +520,19 @@ if (!LANGS[lang]) lang = "en";
 
 // t("key", { name: "Sam" }) -> the wording, with {name} filled in.
 // Falls back to English if a language is missing a line.
+// (Written in older JavaScript on purpose: the TV page uses this file
+// too, and older smart-TV browsers don't understand ?? or replaceAll.)
+function firstOf(...options) {
+  return options.find((x) => x !== undefined && x !== null);
+}
+function fill(text, vars) {
+  for (const [k, v] of Object.entries(vars)) text = text.split(`{${k}}`).join(v);
+  return text;
+}
+
 function t(key, vars = {}) {
-  let text = LANGS[lang][key] ?? LANGS.en[key] ?? key;
-  for (const [k, v] of Object.entries(vars)) text = text.replaceAll(`{${k}}`, v);
+  let text = firstOf(LANGS[lang][key], LANGS.en[key], key);
+  text = fill(text, vars);
   return text;
 }
 
@@ -531,14 +541,13 @@ function t(key, vars = {}) {
 // before any of them repeats.
 const bags = {};
 function pick(key, vars = {}) {
-  const list = LANGS[lang][key] ?? LANGS.en[key] ?? [key];
+  const list = firstOf(LANGS[lang][key], LANGS.en[key], [key]);
   const bagKey = lang + ":" + key;
   if (!bags[bagKey] || bags[bagKey].length === 0) {
     bags[bagKey] = [...list].sort(() => Math.random() - 0.5);
   }
   let text = bags[bagKey].pop();
-  for (const [k, v] of Object.entries(vars)) text = text.replaceAll(`{${k}}`, v);
-  return text;
+  return fill(text, vars);
 }
 
 // Swap the wording of every element marked in the HTML:

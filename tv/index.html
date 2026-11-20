@@ -100,6 +100,14 @@
   <div class="tv-status" id="tv-status"></div>
   <button class="tv-sound-hint" id="tv-sound-hint"><i data-icon="mute" class="icon-sm"></i> <span data-t="tvSoundHint"></span></button>
 
+  <!-- If anything goes wrong (e.g. an old TV browser), show it on screen
+       so we can see what happened instead of a blank page. -->
+  <script>
+    window.onerror = function (msg, file, line) {
+      var el = document.getElementById("tv-net");
+      if (el) el.textContent = "Error: " + msg + " (" + String(file).split("/").pop() + ":" + line + ")";
+    };
+  </script>
   <script src="icons.js"></script>
   <script src="sounds.js"></script>
   <script src="lang.js"></script>
