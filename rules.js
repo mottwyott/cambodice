@@ -25,7 +25,8 @@ const RULES = {
   tripleOnes: 1000,             // three 1s
   tripleMultiplier: 100,        // other triples: face x 100 (three 4s = 400)
   fourOfAKindMultiplier: 2,     // 4 of a kind = 2 x the triple
-  fiveOfAKindMultiplier: 4,     // 5 of a kind = 4 x the triple
+  fiveOfAKindMultiplier: 4,     // 5 of a kind = 4 x the triple (only used if fiveOfAKindWins is off)
+  fiveOfAKindWins: true,        // house rule: five of a kind in one roll wins the game on the spot
   straight: 1500,               // 1-2-3-4-5 or 2-3-4-5-6
 
   loserBuysShots: true,         // last place buys everyone a shot
@@ -83,7 +84,7 @@ function rulesAsHTML(target = RULES.targetScore) {
     [t("rSingle", { n: 5 }), R.singles[5]],
     ...[1, 2, 3, 4, 5, 6].map((f) => [t("rThree", { n: f }), triple(f)]),
     [t("rFour"), t("rTimesTriple", { x: R.fourOfAKindMultiplier })],
-    [t("rFive"), t("rTimesTriple", { x: R.fiveOfAKindMultiplier })],
+    [t("rFive"), R.fiveOfAKindWins ? `<b>${t("rInstantWin")}</b>` : t("rTimesTriple", { x: R.fiveOfAKindMultiplier })],
     [t("rStraight"), R.straight],
   ];
 
@@ -95,7 +96,9 @@ function rulesAsHTML(target = RULES.targetScore) {
   return `
     <h2>${t("rScoring")}</h2>
     <table class="rules-table">${table}</table>
-    <p class="rules-eg">${t("rExample", { a: fmt(triple(2) * R.fourOfAKindMultiplier), b: fmt(triple(1) * R.fiveOfAKindMultiplier) })}</p>
+    <p class="rules-eg">${R.fiveOfAKindWins
+      ? t("rExample4", { a: fmt(triple(2) * R.fourOfAKindMultiplier) }) + " " + t("rFiveWins")
+      : t("rExample", { a: fmt(triple(2) * R.fourOfAKindMultiplier), b: fmt(triple(1) * R.fiveOfAKindMultiplier) })}</p>
 
     <h2>${t("rTurn")}</h2>
     <ul class="rules-list">

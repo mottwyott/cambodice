@@ -32,7 +32,11 @@ function avatarHTML(avatar, size = "sm") {
   return `<span class="avatar avatar-${size}">${esc(a.slice(0, 16) || "🎲")}</span>`;
 }
 const BADGES = ["moneybag", "magnet", "flame", "snail", "rocket"];
-const ranked = (players) => [...players].sort((a, b) => b.score - a.score);
+// Best-first. A five-of-a-kind instant winner (index iw) always goes first.
+const ranked = (players, iw = null) => {
+  const w = players[iw];
+  return [...players].sort((a, b) => (b === w) - (a === w) || b.score - a.score);
+};
 
 // ===== 1. CODE + CONNECTION =====================================
 
@@ -131,6 +135,7 @@ function cleanState(m) {
       finalTriggeredBy: st.finalTriggeredBy === null || st.finalTriggeredBy === undefined ? null : idx(st.finalTriggeredBy),
       scoreCheck: sc ? { name: str(sc.name, 20), milestone: num(sc.milestone), final: !!sc.final } : null,
       lastTurn: lt ? { player: idx(lt.player), points: num(lt.points), bust: !!lt.bust } : null,
+      instantWin: st.instantWin === null || st.instantWin === undefined ? null : idx(st.instantWin),
     },
   };
 }
@@ -283,7 +288,7 @@ function drawGame() {
 
 function drawWinner() {
   const st = S.state;
-  const list = ranked(st.players);
+  const list = ranked(st.players, st.instantWin);
   $("tv-winner-name").textContent = t("wins", { name: list[0].name });
   $("tv-podium").innerHTML = [1, 0, 2]
     .filter((i) => list[i])
@@ -300,8 +305,9 @@ function drawWinner() {
   $("tv-final").innerHTML = list.length > 3 ? scoreboardHTML(list.slice(3), -1, st.target) : "";
 
   // Last place buys the shots
+  const pool = st.instantWin !== null ? list.slice(1) : list; // instant winner never buys
   const low = list[list.length - 1].score;
-  const losers = list.filter((p) => p.score === low);
+  const losers = pool.filter((p) => p.score === low);
   const shot = $("tv-shot");
   if (list.length > 1 && losers.length < list.length) {
     const names = losers.map((p) => p.name);

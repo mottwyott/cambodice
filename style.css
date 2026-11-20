@@ -298,6 +298,9 @@ html, body {
 .pad-btn { padding: 13px 0; font-size: 1rem; border-radius: 14px; font-variant-numeric: tabular-nums; }
 .pad-btn.big { background: var(--tint-2); box-shadow: none; color: var(--lavender-ink); font-weight: 800; }
 .pad-other { color: var(--muted); }
+/* Five of a kind = instant win: a full-width strip under the number buttons */
+.pad-five { grid-column: 1 / -1; padding: 9px 0; font-size: 0.9rem; font-weight: 800; background: var(--butter); color: var(--butter-ink); box-shadow: none; }
+.pad-five[hidden] { display: none; }
 
 .actions { display: grid; grid-template-columns: 0.9fr 1.1fr 1.7fr; gap: 8px; margin-top: auto; }
 .actions .btn { padding: 17px 0; font-size: 1.1rem; border-radius: 18px; }

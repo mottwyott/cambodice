@@ -27,6 +27,7 @@ function freshState() {
     scoreCheck: null,       // { name, milestone } while the score-check popup is showing
     scoreCheckDone: false,  // the score check only happens once per game
     lastTurn: null,         // { player, points, bust } for the "Last turn" line
+    instantWin: null,       // index of whoever rolled five of a kind (wins on the spot)
   };
 }
 
@@ -284,9 +285,24 @@ function soleLeader() {
   return list[0].name;
 }
 
-// Players sorted best-first (winner screen and score checks)
+// Players sorted best-first (winner screen and score checks).
+// A five-of-a-kind instant winner always goes first, whatever their score.
 function ranked() {
-  return [...state.players].sort((a, b) => b.score - a.score);
+  const iw = state.players[state.instantWin];
+  return [...state.players].sort((a, b) => (b === iw) - (a === iw) || b.score - a.score);
+}
+
+// House rule: five of a kind in one roll wins the game on the spot.
+function instantWin() {
+  remember();
+  const p = currentPlayer();
+  state.instantWin = state.current;
+  state.lastTurn = { player: state.current, points: 0, bust: false };
+  state.scoreCheck = null;
+  state.phase = "over";
+  fx.win = true;
+  toast(pick("qInstant", { name: p.name }), "legend");
+  update();
 }
 
 // ----- Photos ---------------------------------------------------
@@ -514,8 +530,10 @@ function renderWinner() {
   $("final-list").innerHTML = list.length > 3 ? scoreboardHTML(list.slice(3), -1) : "";
 
   // Last place buys the shots. If several tie for last, they all do.
+  // (An instant winner never buys, even if they're on the lowest score.)
+  const pool = state.instantWin !== null ? list.slice(1) : list;
   const low = list[list.length - 1].score;
-  const losers = list.filter((p) => p.score === low);
+  const losers = pool.filter((p) => p.score === low);
   const shot = $("shot-note");
   if (list.length > 1 && losers.length < list.length) {
     const names = losers.map((p) => p.name);
@@ -739,6 +757,10 @@ function drawNumpad() {
   $("numpad-hint").classList.toggle("warn", n > 0 && !ok);
 }
 $("other-btn").addEventListener("click", showNumpad);
+$("five-btn").hidden = !RULES.fiveOfAKindWins;
+$("five-btn").addEventListener("click", () =>
+  askConfirm(t("iwTitle"), t("iwText", { name: currentPlayer().name }), t("iwYes"), instantWin)
+);
 $("numpad-keys").addEventListener("click", (e) => {
   const key = e.target.closest("[data-key]")?.dataset.key;
   if (!key) return;

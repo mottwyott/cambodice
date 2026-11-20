@@ -30,7 +30,7 @@ const FIREBASE_CONFIG = {
 };
 
 // Shown small on the History screen, handy to check a phone has the latest version
-const APP_VERSION = "v19";
+const APP_VERSION = "v20";
 
 // The admin's account id (the same one written in firestore.rules)
 const ADMIN_UID = "uN3NYHP3OJTIFQK1SnHWb5PKfi33";
